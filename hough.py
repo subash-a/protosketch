@@ -22,14 +22,18 @@ a[7,1:9] = 1
 
 print a
 
-
+## Global Variables for Setting thresholds and limits for comparing the boundaries
 origin = (3,5)
+## Maximum length of the polar rho axis being detected, this corresponds to the diagonal distance for the image size
 maxlength = n.ceil(n.sqrt(n.square(10)+n.square(10)))
 print "maxlength:", maxlength
+## Maximum angular sweep that is being detected by the accumulator when doing the Hough transform
 maxangle = 180
 print "maxangle:", maxangle
+## The angular threshold for the steps in which the angles need to be iterated upon
 angular_threshold = 10
 print "angular threshold:", angular_threshold
+## The length threshold which is the minimum length of line that we are trying to identify in the given image
 length_threshold = 4
 print "length threshold:", length_threshold
 # Used for increasing sensitivity of the rho value so that values are not integers
