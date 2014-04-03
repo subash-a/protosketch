@@ -48,7 +48,7 @@ mid_axis = maxlength * rho_resolution
 theta_tolerance = 4
 rho_tolerance = 4
 length_tolerance = 2
-
+# The accumulator where the values are incremented depending upon the value of Rho obtained for each angle
 accum = n.zeros((maxlength*rho_resolution,maxangle*theta_resolution), n.int32)
 
 def getMod(i,j):
