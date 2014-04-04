@@ -178,13 +178,22 @@ def getPerpendicularSets(xarray):
                 size_m = len(xarray[m])
                 point_set = getRelatedPairs2(xarray[t],xarray[m])
                 points = compareDimensions(point_set)
-                getCoordinates(points)
+                coords = getCoordinates(points)
+                print removeDuplicates(coords)
+                print "----------------------"
 
 def getCoordinates(points):
+    results = []
     for g in points:
         for h in points:
             if g[1] != h[1]:
-                print "intersection of:",g,"and",h
+                results.append(tuple(solveLinearEquations(g,h)))
+    return n.asarray(results)
+
+def solveLinearEquations(val1,val2):
+    a = n.array([[n.cos(n.deg2rad(val1[1])),n.sin(n.deg2rad(val1[1]))],[n.cos(n.deg2rad(val2[1])),n.sin(n.deg2rad(val2[1]))]])
+    b = n.array([val1[0],val2[0]])
+    return n.linalg.solve(a,b)
 
 def removeDuplicates(items):
     res = {}
@@ -193,7 +202,7 @@ def removeDuplicates(items):
     res_array = []
     for x,y in res.iteritems():
         res_array.append([x[0],x[1]])
-    return n.asarray(res_array,n.int32)
+    return n.asarray(res_array)
 
 def compareDimensions(point_set):
     rect = {}
