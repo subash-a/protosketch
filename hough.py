@@ -1,4 +1,7 @@
+import cv2 as cv
+import scipy as sc
 import numpy as n
+from scipy import ndimage as nd
 from matplotlib import pyplot as plot
 
 a = n.zeros((10,10), n.uint8)
@@ -22,10 +25,28 @@ a[7,1:9] = 1
 
 print a
 
+b = n.zeros((100,100), n.uint8)
+
+#[20,30:50] = 255
+#[20:40,30] = 255
+#[20:40,50] = 255
+#[40,30:50] = 255
+
+b[50,10:70] = 255
+b[50:70,10] = 255
+b[50:70,70] = 255
+b[70,10:70] = 255
+
+## Image dimensions along x axis
+images_x = 100
+
+## Image dimensions along y axis
+images_y = 100
+
 ## Global Variables for Setting thresholds and limits for comparing the boundaries
 origin = (3,5)
 ## Maximum length of the polar rho axis being detected, this corresponds to the diagonal distance for the image size
-maxlength = n.ceil(n.sqrt(n.square(10)+n.square(10)))
+maxlength = n.ceil(n.sqrt(n.square(images_x)+n.square(images_y)))
 print "maxlength:", maxlength
 ## Maximum angular sweep that is being detected by the accumulator when doing the Hough transform
 maxangle = 180
@@ -34,7 +55,7 @@ print "maxangle:", maxangle
 angular_threshold = 10
 print "angular threshold:", angular_threshold
 ## The length threshold which is the minimum length of line that we are trying to identify in the given image
-length_threshold = 4
+length_threshold = 10
 print "length threshold:", length_threshold
 # Used for increasing sensitivity of the rho value so that values are not integers
 # example 1.5 and 1 are not the same and same array item is not incremented since 
@@ -233,9 +254,6 @@ def matchAllPoints(set1,set2):
 def checkRectangle(lines):
     P = getParallelPairs(lines)
     getPerpendicularSets(P)
-    #P = getRelatedPairs(lines)
-    #if compareDimensions(P[0],P[1]) and compareDimensions(P[1],P[0]):
-    #print "It is a rectangle!"
 
 def computePeaks(lines):
     r = lines.shape
@@ -252,24 +270,48 @@ def computePeaks(lines):
                 accum[peak[0] * rho_resolution, peak[1] * theta_resolution] = laverage
     lines = removeDuplicates(lines)
     checkRectangle(lines)
-                
+
+def readImage(path):
+    im = cv.imread(path,cv.IMREAD_GRAYSCALE)
+    nd.filters.gaussian_filter(im,1,0,im)
+    return im
+
+def displayImage(i):
+    plot.imshow(i, cmap="gray")
+    plot.show()
+
+def getRectanglePixels(image,background):
+    if background == 255:
+        return n.column_stack(n.where(image < 48))
+    else:
+        return n.column_stack(n.where(image > 128))
+
 def main():
-    pixels = n.column_stack(n.nonzero(a))
-    for p in pixels:
-        for theta in range(0,maxangle,10):
-            rho = getRho(p[1],p[0],theta)
-            abs_rho = getRhoIndex(rho)
-            abs_theta = getThetaIndex(theta)
-            accum[rho * rho_resolution,abs_theta] = accum[rho * rho_resolution,abs_theta] + 1
-
-    lines = n.column_stack(n.where(accum > length_threshold))
-    for v in lines:
-        length = accum[v[0],v[1]]
-        rho = v[0] = (v[0]/rho_resolution)
-        theta = v[1] = getThetaValueFromIndex(v[1])
-        print "rho:",rho,"theta:",theta ,"deg", "length:",length
-    computePeaks(lines)
-
+    sketch = cv.imread("square.jpg",cv.IMREAD_GRAYSCALE)
+#    sketch = b
+    displayImage(sketch)
+#   pixels2 = getRectanglePixels(sketch,15)
+#   counter = 0
+#   print "Starting Hough Line Transform..."
+#   for p in pixels2:
+#       counter = counter + 1
+#       print counter,"out of ",pixels2.shape[0]," complete..."
+#       for theta in range(0,maxangle,10):
+#           rho = getRho(p[1],p[0],theta)
+#           abs_rho = getRhoIndex(rho)
+#           abs_theta = getThetaIndex(theta)
+#           accum[rho * rho_resolution,abs_theta] = accum[rho * rho_resolution,abs_theta] + 1
+#
+#
+#
+#   lines = n.column_stack(n.where(accum > length_threshold))
+#   print lines
+#   for v in lines:
+#       length = accum[v[0],v[1]]
+#       rho = v[0] = (v[0]/rho_resolution)
+#       theta = v[1] = getThetaValueFromIndex(v[1])
+#       print "rho:",rho,"theta:",theta ,"deg", "length:",length
+#   computePeaks(lines)
 main()
     
 #plot.imshow(a, cmap="gray")
