@@ -1,0 +1,6 @@
+import cv2 as ocv
+import scipy as sp
+import numpy as np
+from matplotlib import pyplot as plot
+
+print "====== This is an experiment for shape detection ====="
