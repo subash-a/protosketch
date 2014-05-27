@@ -2,6 +2,9 @@ import cv2 as ocv
 import scipy as sp
 import numpy as np
 from matplotlib import pyplot as plot
+#========= Importing XML libraries =========
+import xml.etree.ElementTree as XML
+
 
 print "====== This is an experiment for shape detection ====="
 img = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
@@ -18,17 +21,43 @@ button = ocv.imread("button.png", ocv.IMREAD_GRAYSCALE)
 tab = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 drop_down = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
 slider = ocv.imread("slider.png", ocv.IMREAD_GRAYSCALE)
-#========================================
-element = input_box
-width, height = element.shape
-match = ocv.matchTemplate(img,element,matching_method)
-min_val,max_val, min_loc, max_loc = ocv.minMaxLoc(match)
-top_left = max_loc
-bottom_right = (top_left[0] + width, top_left[1]+height)
-ocv.rectangle(img, top_left, bottom_right, 0 , 2)
+#================ Function Declarations ========================
+    
+def addComponent(parent, component, data):
+    c = XML.SubElement(parent,component)
+    c.set("top", data[0])
+    c.set("left", data[1])
+    c.set("right", data[2])
+    c.set("bottom", data[3])
+    return parent
+    
+def createDocument():
+    doc = XML.Element("screen")
+    comment = XML.Comment("Elements found in the prototype sketch")
+    doc.append(comment)
+    addComponent(doc,"input_box",["10","20","30","40"])
+    return doc
+    
+def matchImage(image,template):
+    height, width = template.shape
+    match = ocv.matchTemplate(image,template,matching_method)
+    min_val, max_val, min_loc, max_loc = ocv.minMaxLoc(match)
+    top_left = max_loc
+    bottom_right = (top_left[0] + width, top_left[1]+height)
+    return [top_left, bottom_right]
+
+#==================== Main function calls =====================
+elements  = ["input_box","check_box","radio_button","menu","button","tab","slider"]
+doc = createDocument()
+for e in elements:
+    coords = matchImage(img,eval(e))
+    ocv.rectangle(img, coords[0], coords[1], 0 , 2)
+    addComponent(doc, e, [str(coords[0][0]),str(coords[0][1]),str(coords[1][0]),str(coords[1][1])])
+
+XML.dump(doc)
 #plot.imshow(img,cmap="gray")
 #plot.show()
-print width,height,min_val, max_val, min_loc, max_loc, top_left, bottom_right
+
 
 #====== feature detection trial =======
 dst = ocv.cornerHarris(img,2,3,0.04)
