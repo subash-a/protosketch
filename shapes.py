@@ -8,7 +8,7 @@ import xml.etree.ElementTree as XML
 
 
 print "====== This is an experiment for shape detection ====="
-img = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
+img = ocv.imread("dropdown.png",ocv.IMREAD_UNCHANGED)
 template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 
 #======= Template Matching Methods ========
@@ -28,23 +28,6 @@ drop_down = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
 slider = ocv.imread("slider.png", ocv.IMREAD_GRAYSCALE)
 
 #================ Function Declarations ========================
-    
-def addComponent(parent, component, data):
-    c = XML.SubElement(parent,component)
-    c.set("left", data[0])
-    c.set("top", data[1])
-    c.set("right", data[2])
-    c.set("bottom", data[3])
-    c.set("width", data[4])
-    c.set("height", data[5])
-    return parent
-    
-def createDocument():
-    doc = XML.Element("screen")
-    comment = XML.Comment("Elements found in the prototype sketch")
-    doc.append(comment)
-    return doc
-    
 def matchImage(image,template):
     height, width = template.shape
     match = ocv.matchTemplate(image,template,matching_method)
@@ -54,29 +37,35 @@ def matchImage(image,template):
     return [top_left, bottom_right, width, height]
 
 #==================== Main function calls =====================
-elements  = ["input_box","check_box","radio_button","menu","button","tab","slider"]
-doc = createDocument()
-for e in elements:
-    coords = matchImage(img,eval(e))
-#    ocv.rectangle(img, coords[0], coords[1], 0 , 2)
-    addComponent(doc, e, [str(coords[0][0]),str(coords[0][1]),str(coords[1][0]),str(coords[1][1]), str(coords[2]), str(coords[3])])
+#================= Template matching technique ================
+def templateMatching():
+    elements  = ["input_box","check_box","radio_button","menu","button","tab","slider"]
+    doc = createDocument()
+    for e in elements:
+        coords = matchImage(img,eval(e))
+        ocv.rectangle(img, coords[0], coords[1], 0 , 2)
+        addComponent(doc, e, [str(coords[0][0]),str(coords[0][1]),str(coords[1][0]),str(coords[1][1]), str(coords[2]), str(coords[3])])
+    XML.dump(doc)
+    plot.imshow(img,cmap="gray")
+    plot.show()
 
-#XML.dump(doc)
-#plot.imshow(img,cmap="gray")
-#plot.show()
 
-
-#====== feature detection trial =======
+#============= Feature Detection Technique =====================
 #dst = ocv.cornerHarris(img,2,3,0.04)
 #dst = ocv.dilate(dst,None)
-grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-corners = ocv.goodFeaturesToTrack(grayscale, 200, 0.005, 0.04)
+#grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
+gray = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
+corners = ocv.goodFeaturesToTrack(gray, 200, 0.009, 0.04)
 corners = np.int0(corners)
+sift = ocv.SIFT()
+key = sift.detect(gray,None)
+print key
 print corners.shape
 
 for c in corners:
     x,y = c.ravel()
-    ocv.circle(img, (x,y),3,255,-1)
+    ocv.circle(img, (x,y),3,(0,255,0),-1)
+
 
 plot.imshow(img)
 plot.show()
