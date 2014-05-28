@@ -58,18 +58,29 @@ elements  = ["input_box","check_box","radio_button","menu","button","tab","slide
 doc = createDocument()
 for e in elements:
     coords = matchImage(img,eval(e))
-    ocv.rectangle(img, coords[0], coords[1], 0 , 2)
+#    ocv.rectangle(img, coords[0], coords[1], 0 , 2)
     addComponent(doc, e, [str(coords[0][0]),str(coords[0][1]),str(coords[1][0]),str(coords[1][1]), str(coords[2]), str(coords[3])])
 
-XML.dump(doc)
+#XML.dump(doc)
 #plot.imshow(img,cmap="gray")
 #plot.show()
 
 
 #====== feature detection trial =======
-dst = ocv.cornerHarris(img,2,3,0.04)
-dst = ocv.dilate(dst,None)
+#dst = ocv.cornerHarris(img,2,3,0.04)
+#dst = ocv.dilate(dst,None)
+grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
+corners = ocv.goodFeaturesToTrack(grayscale, 200, 0.005, 0.04)
+corners = np.int0(corners)
+print corners.shape
 
-#plot.imshow(dst)
-#plot.show()
+for c in corners:
+    x,y = c.ravel()
+    ocv.circle(img, (x,y),3,255,-1)
+
+plot.imshow(img)
+plot.show()
+
+
+
 
