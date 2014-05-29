@@ -1,0 +1,18 @@
+import xml.etree.Element as XML
+
+    
+def addComponent(parent, component, data):
+    c = XML.SubElement(parent,component)
+    c.set("left", data[0])
+    c.set("top", data[1])
+    c.set("right", data[2])
+    c.set("bottom", data[3])
+    c.set("width", data[4])
+    c.set("height", data[5])
+    return parent
+    
+def createDocument():
+    doc = XML.Element("screen")
+    comment = XML.Comment("Elements found in the prototype sketch")
+    doc.append(comment)
+    return doc
