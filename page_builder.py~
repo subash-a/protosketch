@@ -1,4 +1,4 @@
-import xml.etree.Element as XML
+import xml.etree.ElementTree as XML
 
     
 def addComponent(parent, component, data):
@@ -16,3 +16,19 @@ def createDocument():
     comment = XML.Comment("Elements found in the prototype sketch")
     doc.append(comment)
     return doc
+
+def createHTMLPage(xml_template,js_src,css):
+    html = XML.Element("html")
+    head = XML.SubElement(html,"head")
+    body = XML.SubElement(html,"body")
+    body.append(xml_template)
+    return html
+
+def buildScriptTags(js_list):
+    tags = XML.Element("tags")
+    for x in js_list:
+        script = XML.Element("script")
+        script.set("src",x)
+        tags.append(script)
+    return tags
+        
