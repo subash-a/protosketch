@@ -39,12 +39,23 @@ def matchImage(image,template):
 #==================== Main function calls =====================
 #================= Template matching technique ================
 def templateMatching():
-    elements  = ["input_box","check_box","radio_button","menu","button","tab","slider"]
+    elements  = ["input_box"
+                 , "check_box"
+                 , "radio_button"
+                 , "menu"
+                 , "button"
+                 , "tab"    
+                 , "slider"]
     doc = createDocument()
     for e in elements:
         coords = matchImage(img,eval(e))
         ocv.rectangle(img, coords[0], coords[1], 0 , 2)
-        addComponent(doc, e, [str(coords[0][0]),str(coords[0][1]),str(coords[1][0]),str(coords[1][1]), str(coords[2]), str(coords[3])])
+        addComponent(doc, e, [str(coords[0][0]) 
+                              , str(coords[0][1]) 
+                              , str(coords[1][0]) 
+                              , str(coords[1][1]) 
+                              , str(coords[2]) 
+                              , str(coords[3])])
     XML.dump(doc)
     plot.imshow(img,cmap="gray")
     plot.show()
@@ -59,16 +70,16 @@ corners = ocv.goodFeaturesToTrack(gray, 200, 0.009, 0.04)
 corners = np.int0(corners)
 sift = ocv.SIFT()
 key = sift.detect(gray,None)
-print key
+for k in key:
+    print k
+
 print corners.shape
 
-for c in corners:
-    x,y = c.ravel()
-    ocv.circle(img, (x,y),3,(0,255,0),-1)
-
-
-plot.imshow(img)
-plot.show()
+#for c in corners:
+#    x,y = c.ravel()
+#    ocv.circle(img, (x,y),3,(0,255,0),-1)
+#plot.imshow(img)
+#plot.show()
 
 
 
