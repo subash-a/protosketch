@@ -5,10 +5,12 @@ import numpy as np
 from matplotlib import pyplot as plot
 #========= Importing XML libraries =========
 import xml.etree.ElementTree as XML
+#======== Importing Custom Libraries ========
+import page_builder as pbuild
 
 
 print "====== This is an experiment for shape detection ====="
-img = ocv.imread("dropdown.png",ocv.IMREAD_UNCHANGED)
+img = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
 template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 
 #======= Template Matching Methods ========
@@ -36,51 +38,52 @@ def matchImage(image,template):
     bottom_right = (top_left[0] + width, top_left[1]+height)
     return [top_left, bottom_right, width, height]
 
-#==================== Main function calls =====================
+
 #================= Template matching technique ================
 def templateMatching():
-    elements  = ["input_box"
+    elements  = ["input"
                  , "check_box"
                  , "radio_button"
                  , "menu"
                  , "button"
                  , "tab"    
                  , "slider"]
-    doc = createDocument()
+    jsfiles = ["utils/js/jquery-1.7.1.js","utils/js/bootstrap.js"]
+    cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
+    document = pbuild.createDocument()
     for e in elements:
         coords = matchImage(img,eval(e))
         ocv.rectangle(img, coords[0], coords[1], 0 , 2)
-        addComponent(doc, e, [str(coords[0][0]) 
-                              , str(coords[0][1]) 
-                              , str(coords[1][0]) 
-                              , str(coords[1][1]) 
-                              , str(coords[2]) 
-                              , str(coords[3])])
-    XML.dump(doc)
+        pbuild.addComponent(document,e,[coords[0][1],coords[0][0],coords[1][0],coords[1][1],coords[2],coords[3]])
+        
+    html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
+    pbuild.showXML(html)
     plot.imshow(img,cmap="gray")
     plot.show()
 
 
 #============= Feature Detection Technique =====================
-#dst = ocv.cornerHarris(img,2,3,0.04)
-#dst = ocv.dilate(dst,None)
-#grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-gray = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-corners = ocv.goodFeaturesToTrack(gray, 200, 0.009, 0.04)
-corners = np.int0(corners)
-sift = ocv.SIFT()
-key = sift.detect(gray,None)
-for k in key:
-    print k
+def featureDetection():
+    #dst = ocv.cornerHarris(img,2,3,0.04)
+    #dst = ocv.dilate(dst,None)
+    #grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
+    gray = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
+    corners = ocv.goodFeaturesToTrack(gray, 200, 0.009, 0.04)
+    corners = np.int0(corners)
+    sift = ocv.SIFT()
+    key = sift.detect(gray,None)
+    for k in key:
+        print k
 
-print corners.shape
-
-#for c in corners:
-#    x,y = c.ravel()
-#    ocv.circle(img, (x,y),3,(0,255,0),-1)
-#plot.imshow(img)
-#plot.show()
-
+    print corners.shape
+    
+    #for c in corners:
+    #    x,y = c.ravel()
+    #    ocv.circle(img, (x,y),3,(0,255,0),-1)
+    #plot.imshow(img)
+    #plot.show()
+#==================== Main function calls =====================
+templateMatching()    
 
 
 

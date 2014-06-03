@@ -8,7 +8,7 @@ cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
 h = pb.createHTMLPage(c,jsfiles,cssfiles)
 et = XML.ElementTree()
 et.write(XML.tostring(h),"single.html")
-
+pb.buildStyleAttributes(["left=200","right=300"])
 
 
 

@@ -3,18 +3,19 @@ import xml.etree.ElementTree as XML
     
 def addComponent(parent, component, data):
     c = XML.SubElement(parent,component)
-    c.set("left", data[0])
-    c.set("top", data[1])
-    c.set("right", data[2])
-    c.set("bottom", data[3])
-    c.set("width", data[4])
-    c.set("height", data[5])
+    attributes = []
+    attributess.append("left:" + str(data[0]))
+    attributes.append("top:" + str(data[1]))
+    attributes.append("right:" + str(data[2]))
+    attributes.append("bottom:" + str(data[3]))
+    attributes.append("width:" + str(data[4]))
+    attributes.append("height:" + str(data[5]))
+    style = buildStyleAttribute(attributes)
+    c.set("style",style)
     return parent
     
 def createDocument():
-    doc = XML.Element("screen")
-    comment = XML.Comment("Elements found in the prototype sketch")
-    doc.append(comment)
+    doc = XML.Element("div")
     return doc
 
 def createHTMLPage(xml_template,js_list,css_list):
@@ -24,7 +25,9 @@ def createHTMLPage(xml_template,js_list,css_list):
     css_list = buildStyleTags(css_list)
     for c in css_list:
         head.append(c)
+
     body.append(xml_template)
+
     js_list = buildScriptTags(js_list)
     for j in js_list:
         body.append(j)
@@ -48,3 +51,12 @@ def buildStyleTags(css_list):
         link.set("src", x)
         tags.append(link)
     return tags
+
+def buildStyleAttributes(attribs):
+    style = ""
+    for a in attribs:
+        style = style + a + ";"
+    return style
+
+def showXML(e):
+    XML.dump(e)
