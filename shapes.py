@@ -10,7 +10,7 @@ import page_builder as pbuild
 
 
 print "====== This is an experiment for shape detection ====="
-img = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
+img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
 template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 
 #======= Template Matching Methods ========
@@ -67,23 +67,19 @@ def featureDetection():
     #dst = ocv.cornerHarris(img,2,3,0.04)
     #dst = ocv.dilate(dst,None)
     #grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-    gray = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-    corners = ocv.goodFeaturesToTrack(gray, 200, 0.009, 0.04)
-    corners = np.int0(corners)
-    sift = ocv.SIFT()
-    key = sift.detect(gray,None)
-    for k in key:
-        print k
+#    gray = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
+#    blue = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
 
-    print corners.shape
+    sift = ocv.SIFT()
+    src_key, src_desc = sift.detectAndCompute(img,None)
+    dest_key, dest_desc = sift.detectAndCompute(input_box,None)
+    brute = ocv.BFMatcher(ocv.NORM_L2)
+    matches = brute.knnMatch(src_desc,dest_desc,k=2)
+    print matches[10][0].distance, matches[10][0].trainIdx, matches[10][0].queryIdx, matches[10][0].imgIdx
     
-    #for c in corners:
-    #    x,y = c.ravel()
-    #    ocv.circle(img, (x,y),3,(0,255,0),-1)
-    #plot.imshow(img)
-    #plot.show()
 #==================== Main function calls =====================
-templateMatching()    
+featureDetection()
+
 
 
 
