@@ -73,10 +73,37 @@ def featureDetection():
     sift = ocv.SIFT()
     src_key, src_desc = sift.detectAndCompute(img,None)
     dest_key, dest_desc = sift.detectAndCompute(input_box,None)
-    brute = ocv.BFMatcher(ocv.NORM_L2)
-    matches = brute.knnMatch(src_desc,dest_desc,k=2)
-    print matches[10][0].distance, matches[10][0].trainIdx, matches[10][0].queryIdx, matches[10][0].imgIdx
+
+    FLANN_INDEX_KDTREE = 0
+    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+    search_params = dict(checks = 50)
     
+    flann = ocv.FlannBasedMatcher(index_params, search_params)
+    matches = flann.knnMatch(src_desc, dest_desc, k = 2)
+    
+
+    src_pts = np.float32([src_key[m.queryIdx].pt 
+                          for m,n in matches]).reshape(-1,1,2)
+    dest_pts = np.float32([dest_key[m.trainIdx].pt 
+                           for m,n in matches]).reshape(-1,1,2)
+
+    print src_pts
+    print dest_pts
+
+    M,mask = ocv.findHomography(src_pts, dest_pts, ocv.RANSAC, 5.0)
+    print M
+    good = []
+    for m,n in matches:
+        good.append(m)
+
+    matchesMask = mask.ravel().tolist()
+    draw_params = dict(matchColor = (0,255,0), 
+                       singlePointColor = None, 
+                       matchesMask = matchesMask, 
+                       flags = 2)
+    img3 = ocv.drawMatches(img,src_key,input_box,dest_key,good,None,**draw_params)
+    plot.imshow(img3,'gray')
+    plot.show()
 #==================== Main function calls =====================
 featureDetection()
 
