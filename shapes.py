@@ -9,17 +9,17 @@ import xml.etree.ElementTree as XML
 import page_builder as pbuild
 
 #============ Constants =====================
-GRAY = ocv.IMREAD_GRAYSCALE
-ASIS = ocv.IMREAD_UNCHANGED
-COLOR = ocv.IMREAD_COLOR
-HESSIAN_THRESHOLD = 400
-FLANN_INDEX_KDTREE = 0
-FLANN_INDEX_LSH = 1
-TABLE_NUMBER = 6
-KEY_SIZE = 12
-MULTI_PROBE_LEVEL = 1
-TREES = 5
-CHECKS = 100
+GRAY = ocv.IMREAD_GRAYSCALE # read image as gray scale image #
+ASIS = ocv.IMREAD_UNCHANGED # read image as is ,also include alpha channels #
+COLOR = ocv.IMREAD_COLOR # read image as colored image no alpha #
+HESSIAN_THRESHOLD = 400 # The Hessian matrix threshold for SURF #
+FLANN_INDEX_KDTREE = 0 # FLANN based matching algorithm selection(SIFT,SURF) #
+FLANN_INDEX_LSH = 1 # FLANN based matching algorithm (ORB,BRIEF) #
+TABLE_NUMBER = 6 # Index param value for FLANN_INDEX_LSH #
+KEY_SIZE = 12 # Index param value for FLANN_INDEX_LSH #
+MULTI_PROBE_LEVEL = 1 # Index param value for FLANN_INDEX_LSH #
+TREES = 5 # Index param value for FLANN_INDEX_KDTREE #
+CHECKS = 100 # search param value for number of checks #
 
 print "====== This is an experiment for shape detection ====="
 img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
@@ -75,14 +75,16 @@ def templateMatching():
 
 
 #============= Feature Detection Technique =====================
+# Reads Image and returns a matrix of the image as per the flags #
 def readImage(image, flag):
     m = ocv.imread(image, flag)
     return m
 
+# Changes the color scheme of the image to one of BGR, GRAY, HSL #
 def colorChange(image, destColor):
     c = ocv.cvtColor(image, destColor)
     return c
-
+# Detects the key points of a given image using a given algorithm #
 def detectFeatures(image, method):
     if(method == "SIFT"):
         algorithm = ocv.SIFT()
@@ -93,17 +95,17 @@ def detectFeatures(image, method):
 
     keyPoints = algorithm.detect(image, None)
     return (keyPoints,algorithm)
-
+# Displays the key points of a image given the keypoints #
 def showKeyPoints(image,keypoints,flag):
     kp_image = ocv.drawKeypoints(image,keypoints,color=(0,255,255))
     plot.imshow(kp_image)
     plot.show()
-
+# Computes the desciptors from keypoints using the algorithm provided #
 def computeDescriptors(image, method):
     keypoints, algorithm = detectFeatures(image,method)
     keypoints, descriptors = algorithm.compute(image,keypoints)
     return keypoints, descriptors
-    
+# Matches the descriptor sets using a matching technique give by user #    
 def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
     if(matching_algorithm == "BRUTE_FORCE"):
         algorithm = ocv.BFMatcher(ocv.NORM_L2)
@@ -134,14 +136,6 @@ def featureDetection():
     for m in match:
         print m
     
-#    FLANN_INDEX_KDTREE = 0
-#    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-#    search_params = dict(checks = 50)
-#    
-#    flann = ocv.FlannBasedMatcher(index_params, search_params)
-#    matches = flann.knnMatch(src_desc, dest_desc, k = 2)
-#
-#
 #    src_pts = np.float32([src_key[m.queryIdx].pt 
 #                          for m,n in matches]).reshape(-1,1,2)
 #    dest_pts = np.float32([dest_key[m.trainIdx].pt 
