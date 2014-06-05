@@ -13,6 +13,13 @@ GRAY = ocv.IMREAD_GRAYSCALE
 ASIS = ocv.IMREAD_UNCHANGED
 COLOR = ocv.IMREAD_COLOR
 HESSIAN_THRESHOLD = 400
+FLANN_INDEX_KDTREE = 0
+FLANN_INDEX_LSH = 1
+TABLE_NUMBER = 6
+KEY_SIZE = 12
+MULTI_PROBE_LEVEL = 1
+TREES = 5
+CHECKS = 100
 
 print "====== This is an experiment for shape detection ====="
 img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
@@ -97,34 +104,51 @@ def computeDescriptors(image, method):
     keypoints, descriptors = algorithm.compute(image,keypoints)
     return keypoints, descriptors
     
-def matchFeatures(desc1,desc2,method,isknnmatch):
-    if(method == "BRUTE_FORCE"):
+def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
+    if(matching_algorithm == "BRUTE_FORCE"):
         algorithm = ocv.BFMatcher(ocv.NORM_L2)
         if(isknnmatch == True):
-            matches = ocv.knnMatch(desc1,desc2,k=2)
+            matches = algorithm.knnMatch(desc1,desc2,k=2)
         else:
-            matches = ocv.match(desc1,desc2)
-        return matches
+            matches = algorithm.match(desc1,desc2)
+    elif(matching_algorithm == "FLANN"):
+        if(feature_algorithm == "SIFT" or feature_algorithm == "SURF"):
+            index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = TREES)
+        else:
+            index_params = dict(algorithm = FLANN_INDEX_LSH,
+                                table_number = TABLE_NUMBER,
+                                key_size = KEY_SIZE,
+                                multi_probe_level = MULTI_PROBE_LEVEL)
+        search_params = dict(checks = CHECKS)
+        algorithm = ocv.FlannBasedMatcher(index_params, search_params)
+        if (isknnmatch == True):
+            matches = algorithm.knnMatch(desc1,desc2,k=2)
+        else:
+            matches = algorithm.match(desc1,desc2)
+    return matches
+
 def featureDetection():
     src_key, src_desc = computeDescriptors(img,"SIFT")
     dest_key, dest_desc = computeDescriptors(input_box,"SIFT")
+    match = matchFeatures(src_desc,dest_desc,"BRUTE_FORCE",False,"SIFT")
+    for m in match:
+        print m
     
-    
-    FLANN_INDEX_KDTREE = 0
-    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-    search_params = dict(checks = 50)
-    
-    flann = ocv.FlannBasedMatcher(index_params, search_params)
-    matches = flann.knnMatch(src_desc, dest_desc, k = 2)
-
-
-    src_pts = np.float32([src_key[m.queryIdx].pt 
-                          for m,n in matches]).reshape(-1,1,2)
-    dest_pts = np.float32([dest_key[m.trainIdx].pt 
-                           for m,n in matches]).reshape(-1,1,2)
-
-    print src_pts
-    print dest_pts
+#    FLANN_INDEX_KDTREE = 0
+#    index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+#    search_params = dict(checks = 50)
+#    
+#    flann = ocv.FlannBasedMatcher(index_params, search_params)
+#    matches = flann.knnMatch(src_desc, dest_desc, k = 2)
+#
+#
+#    src_pts = np.float32([src_key[m.queryIdx].pt 
+#                          for m,n in matches]).reshape(-1,1,2)
+#    dest_pts = np.float32([dest_key[m.trainIdx].pt 
+#                           for m,n in matches]).reshape(-1,1,2)
+#
+#    print src_pts
+#    print dest_pts
 #
 #    M,mask = ocv.findHomography(src_pts, dest_pts, ocv.RANSAC, 5.0)
 #    print M
