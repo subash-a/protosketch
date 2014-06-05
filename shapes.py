@@ -8,6 +8,11 @@ import xml.etree.ElementTree as XML
 #======== Importing Custom Libraries ========
 import page_builder as pbuild
 
+#============ Constants =====================
+GRAY = ocv.IMREAD_GRAYSCALE
+ASIS = ocv.IMREAD_UNCHANGED
+COLOR = ocv.IMREAD_COLOR
+HESSIAN_THRESHOLD = 400
 
 print "====== This is an experiment for shape detection ====="
 img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
@@ -63,24 +68,55 @@ def templateMatching():
 
 
 #============= Feature Detection Technique =====================
+def readImage(image, flag):
+    m = ocv.imread(image, flag)
+    return m
+
+def colorChange(image, destColor):
+    c = ocv.cvtColor(image, destColor)
+    return c
+
+def detectFeatures(image, method):
+    if(method == "SIFT"):
+        algorithm = ocv.SIFT()
+    elif(method == "SURF"):
+        algorithm = ocv.SURF(HESSIAN_THRESHOLD)
+    elif(method == "FAST"):
+        algorithm = ocv.FastFeatureDetector()
+
+    keyPoints = algorithm.detect(image, None)
+    return (keyPoints,algorithm)
+
+def showKeyPoints(image,keypoints,flag):
+    kp_image = ocv.drawKeypoints(image,keypoints,color=(0,255,255))
+    plot.imshow(kp_image)
+    plot.show()
+
+def computeDescriptors(image, method):
+    keypoints, algorithm = detectFeatures(image,method)
+    keypoints, descriptors = algorithm.compute(image,keypoints)
+    return keypoints, descriptors
+    
+def matchFeatures(desc1,desc2,method,isknnmatch):
+    if(method == "BRUTE_FORCE"):
+        algorithm = ocv.BFMatcher(ocv.NORM_L2)
+        if(isknnmatch == True):
+            matches = ocv.knnMatch(desc1,desc2,k=2)
+        else:
+            matches = ocv.match(desc1,desc2)
+        return matches
 def featureDetection():
-    #dst = ocv.cornerHarris(img,2,3,0.04)
-    #dst = ocv.dilate(dst,None)
-    #grayscale = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-#    gray = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-#    blue = ocv.cvtColor(img,ocv.COLOR_BGR2GRAY)
-
-    sift = ocv.SIFT()
-    src_key, src_desc = sift.detectAndCompute(img,None)
-    dest_key, dest_desc = sift.detectAndCompute(input_box,None)
-
+    src_key, src_desc = computeDescriptors(img,"SIFT")
+    dest_key, dest_desc = computeDescriptors(input_box,"SIFT")
+    
+    
     FLANN_INDEX_KDTREE = 0
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
     search_params = dict(checks = 50)
     
     flann = ocv.FlannBasedMatcher(index_params, search_params)
     matches = flann.knnMatch(src_desc, dest_desc, k = 2)
-    
+
 
     src_pts = np.float32([src_key[m.queryIdx].pt 
                           for m,n in matches]).reshape(-1,1,2)
@@ -89,21 +125,21 @@ def featureDetection():
 
     print src_pts
     print dest_pts
-
-    M,mask = ocv.findHomography(src_pts, dest_pts, ocv.RANSAC, 5.0)
-    print M
-    good = []
-    for m,n in matches:
-        good.append(m)
-
-    matchesMask = mask.ravel().tolist()
-    draw_params = dict(matchColor = (0,255,0), 
-                       singlePointColor = None, 
-                       matchesMask = matchesMask, 
-                       flags = 2)
-    img3 = ocv.drawMatches(img,src_key,input_box,dest_key,good,None,**draw_params)
-    plot.imshow(img3,'gray')
-    plot.show()
+#
+#    M,mask = ocv.findHomography(src_pts, dest_pts, ocv.RANSAC, 5.0)
+#    print M
+#    good = []
+#    for m,n in matches:
+#        good.append(m)
+#
+#    matchesMask = mask.ravel().tolist()
+#    draw_params = dict(matchColor = (0,255,0), 
+#                       singlePointColor = None, 
+#                       matchesMask = matchesMask, 
+#                       flags = 2)
+#    img3 = ocv.drawMatches(img,src_key,input_box,dest_key,good,None,**draw_params)
+#    plot.imshow(img3,'gray')
+#    plot.show()
 #==================== Main function calls =====================
 featureDetection()
 
