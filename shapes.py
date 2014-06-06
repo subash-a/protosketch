@@ -128,14 +128,31 @@ def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
         else:
             matches = algorithm.match(desc1,desc2)
     return matches
-
-def featureDetection():
-    src_key, src_desc = computeDescriptors(img,"SIFT")
-    dest_key, dest_desc = computeDescriptors(input_box,"SIFT")
-    match = matchFeatures(src_desc,dest_desc,"BRUTE_FORCE",False,"SIFT")
+# Return the matching keypoints from the training image that is found in query image #
+def getMatchingKeypoints(match,src_key,dest_key):
+    matching_keypoints = []
     for m in match:
-        print m
+        matching_keypoints.append(dest_key[m.queryIdx])
+    return matching_keypoints
     
+def featureDetection():
+    src_key, src_desc = computeDescriptors(input_box,"SIFT")
+    dest_key, dest_desc = computeDescriptors(img,"SIFT")
+    print "Source Keypoints: ",len(src_key)
+    print "Destination Keypoints: ",len(dest_key)
+    print "Source Descriptors: ",len(src_desc)
+    print "Destination Descriptors: ",len(dest_desc)
+    match = matchFeatures(src_desc,dest_desc,"FLANN",False,"SIFT")
+    print "Number of Matches: ",len(match)
+    print "Training Desc Index:", match[0].trainIdx
+    print "Query Desc Index: ", match[0].queryIdx
+    print "Training kp for index: ", src_key[match[0].trainIdx].pt
+    print "Query kp for index: ", dest_key[match[0].queryIdx].pt
+    kps = getMatchingKeypoints(match,src_key,dest_key)
+    showKeyPoints(img,kps,None)
+    #plot.subplot(2,1,1), plot.imshow(input_box)
+    #plot.subplot(2,1,2), plot.imshow(img)
+    #plot.show()
 #    src_pts = np.float32([src_key[m.queryIdx].pt 
 #                          for m,n in matches]).reshape(-1,1,2)
 #    dest_pts = np.float32([dest_key[m.trainIdx].pt 
