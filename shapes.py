@@ -1,18 +1,38 @@
-#===== Importing utility libraries for opencv =====
+#===== Importing utility libraries for opencv ==================================
 import cv2 as ocv
 import scipy as sp
 import numpy as np
 from matplotlib import pyplot as plot
-#========= Importing XML libraries =========
+#========= Importing XML libraries =============================================
 import xml.etree.ElementTree as XML
-#======== Importing Custom Libraries ========
+#======== Importing Custom Libraries ===========================================
 import page_builder as pbuild
 
-#============ Constants =====================
+#============ OPENCV CONSTANTS =================================================
 GRAY = ocv.IMREAD_GRAYSCALE # read image as gray scale image #
 ASIS = ocv.IMREAD_UNCHANGED # read image as is ,also include alpha channels #
 COLOR = ocv.IMREAD_COLOR # read image as colored image no alpha #
-HESSIAN_THRESHOLD = 400 # The Hessian matrix threshold for SURF #
+
+#======== SIFT PARAMETERS ======================================================
+SIFT_NUMBER_OF_FEATURES = 10
+SIFT_NUMBER_OF_OCTAVE_LAYERS = 3
+SIFT_CONTRAST_THRESHOLD = 0.04
+SIFT_EDGE_THRESHOLD = 0.04
+SIFT_SIGMA = 0.1
+
+#============ SURF PARAMETERS ==================================================
+SURF_HESSIAN_THRESHOLD = 400 # The Hessian matrix threshold for SURF #
+SURF_NUMBER_OF_OCTAVES = 4
+SURF_NUMBER_OF_OCTAVE_LAYERS = 4
+SURF_USE_128 = False
+SURF_ORIENTATION = True
+
+#============ FAST PARAMETERS ==================================================
+FAST_THRESHOLD = 1
+FAST_NON_MAX_SUPPRESSION = True
+FAST_TYPE = ocv.FAST_FEATURE_DETECTOR_TYPE_9_16
+
+#========== BRUTE FORCE MATCHER PARAMETERS =====================================
 FLANN_INDEX_KDTREE = 0 # FLANN based matching algorithm selection(SIFT,SURF) #
 FLANN_INDEX_LSH = 1 # FLANN based matching algorithm (ORB,BRIEF) #
 TABLE_NUMBER = 6 # Index param value for FLANN_INDEX_LSH #
@@ -25,23 +45,12 @@ print "====== This is an experiment for shape detection ====="
 img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
 template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 
-#======= Template Matching Methods ========
+#======= Template Matching Methods =============================================
 
 methods = ['ocv.TM_CCOEFF','ocv.TM_CCOEFF_NORMED','ocv.TM_CCOR']
 matching_method = eval(methods[1])
 
-#====== Reading template elements ======
-
-input_box = ocv.imread("inputbox.png",ocv.IMREAD_GRAYSCALE)
-check_box = ocv.imread("checkbox.png", ocv.IMREAD_GRAYSCALE)
-menu = ocv.imread("menu.png", ocv.IMREAD_GRAYSCALE)
-radio_button = ocv.imread("radio.png", ocv.IMREAD_GRAYSCALE)
-button = ocv.imread("button.png", ocv.IMREAD_GRAYSCALE)
-tab = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
-drop_down = ocv.imread("dropdown.png",ocv.IMREAD_GRAYSCALE)
-slider = ocv.imread("slider.png", ocv.IMREAD_GRAYSCALE)
-
-#================ Function Declarations ========================
+#================ Function Declarations ========================================
 def matchImage(image,template):
     height, width = template.shape
     match = ocv.matchTemplate(image,template,matching_method)
@@ -51,7 +60,7 @@ def matchImage(image,template):
     return [top_left, bottom_right, width, height]
 
 
-#================= Template matching technique ================
+#================= Template matching technique =================================
 def templateMatching():
     elements  = ["input"
                  , "check_box"
@@ -74,7 +83,7 @@ def templateMatching():
     plot.show()
 
 
-#============= Feature Detection Technique =====================
+#============= Feature Detection Functions =====================================
 # Reads Image and returns a matrix of the image as per the flags #
 def readImage(image, flag):
     m = ocv.imread(image, flag)
@@ -128,28 +137,59 @@ def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
         else:
             matches = algorithm.match(desc1,desc2)
     return matches
-# Return the matching keypoints from the training image that is found in query image #
+# Return the matching keypoints from the training image that is found in 
+# query image 
+# trainIdx is the corresponding matching point from the training index 
+# descriptors
 def getMatchingKeypoints(match,src_key,dest_key):
     matching_keypoints = []
     for m in match:
-        matching_keypoints.append(dest_key[m.queryIdx])
+        matching_keypoints.append(dest_key[m.trainIdx])
     return matching_keypoints
-    
+
+def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
+    src_kp_image = ocv.drawKeypoints(src_image, src_matches, color=(0,255,255))
+    dest_kp_image = ocv.drawKeypoints(dest_image, dest_matches, color=(0,255,255))
+
+    plot.subplot(2,1,1)
+    plot.imshow(src_kp_image)
+
+    plot.subplot(2,1,2)
+    plot.imshow(dest_kp_image)
+
+    plot.show()
+
+#====== Reading template elements ==============================================
+
+input_box = readImage("inputbox.png",GRAY)
+check_box = readImage("checkbox.png", GRAY)
+menu = readImage("menu.png", GRAY)
+radio_button = readImage("radio.png", GRAY)
+button = readImage("button.png", GRAY)
+tab = readImage("tab.png", GRAY)
+drop_down = readImage("dropdown.png",GRAY)
+slider = readImage("slider.png", GRAY)
+banana = readImage("../../../Pictures/stockimages/github.jpeg",GRAY)
+small_banana = readImage("../../../Pictures/stockimages/small_banana.jpeg",GRAY)
+
 def featureDetection():
-    src_key, src_desc = computeDescriptors(input_box,"SIFT")
-    dest_key, dest_desc = computeDescriptors(img,"SIFT")
+    src_key, src_desc = computeDescriptors(small_banana,"SIFT")
+    dest_key, dest_desc = computeDescriptors(banana,"SIFT")
     print "Source Keypoints: ",len(src_key)
     print "Destination Keypoints: ",len(dest_key)
     print "Source Descriptors: ",len(src_desc)
     print "Destination Descriptors: ",len(dest_desc)
     match = matchFeatures(src_desc,dest_desc,"FLANN",False,"SIFT")
     print "Number of Matches: ",len(match)
-    print "Training Desc Index:", match[0].trainIdx
-    print "Query Desc Index: ", match[0].queryIdx
-    print "Training kp for index: ", src_key[match[0].trainIdx].pt
-    print "Query kp for index: ", dest_key[match[0].queryIdx].pt
+    src_indices = []
+    dest_indices = []
+    for g in match:
+        src_indices.append(src_key[g.queryIdx])
+        dest_indices.append(dest_key[g.trainIdx])
+        print "Training Desc Index:", g.trainIdx, ", Query Desc Index: ", g.queryIdx
+
     kps = getMatchingKeypoints(match,src_key,dest_key)
-    showKeyPoints(img,kps,None)
+    showMatchingPoints(small_banana,src_indices,banana,dest_indices)
     #plot.subplot(2,1,1), plot.imshow(input_box)
     #plot.subplot(2,1,2), plot.imshow(img)
     #plot.show()
@@ -175,7 +215,7 @@ def featureDetection():
 #    img3 = ocv.drawMatches(img,src_key,input_box,dest_key,good,None,**draw_params)
 #    plot.imshow(img3,'gray')
 #    plot.show()
-#==================== Main function calls =====================
+#==================== Main function calls ======================================
 featureDetection()
 
 
