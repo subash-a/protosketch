@@ -14,11 +14,11 @@ ASIS = ocv.IMREAD_UNCHANGED # read image as is ,also include alpha channels #
 COLOR = ocv.IMREAD_COLOR # read image as colored image no alpha #
 
 #======== SIFT PARAMETERS ======================================================
-SIFT_NUMBER_OF_FEATURES = 10
+SIFT_NUMBER_OF_FEATURES = 100
 SIFT_NUMBER_OF_OCTAVE_LAYERS = 3
 SIFT_CONTRAST_THRESHOLD = 0.04
-SIFT_EDGE_THRESHOLD = 0.04
-SIFT_SIGMA = 0.1
+SIFT_EDGE_THRESHOLD = 10
+SIFT_SIGMA = 1.6
 
 #============ SURF PARAMETERS ==================================================
 SURF_HESSIAN_THRESHOLD = 400 # The Hessian matrix threshold for SURF #
@@ -27,17 +27,22 @@ SURF_NUMBER_OF_OCTAVE_LAYERS = 4
 SURF_USE_128 = False
 SURF_ORIENTATION = True
 
-#============ FAST PARAMETERS ==================================================
-FAST_THRESHOLD = 1
-FAST_NON_MAX_SUPPRESSION = True
-FAST_TYPE = ocv.FAST_FEATURE_DETECTOR_TYPE_9_16
+#============ ORB PARAMETERS ==================================================
+ORB_NUMBER_OF_FEATURES = 500
+ORB_SCALE_FACTOR = 1.5
+ORB_N_LEVELS = 8
+ORB_EDGE_THRESHOLD = 31
+ORB_FIRST_LEVEL = 0
+ORB_WTA_K = 2
+ORB_SCORE_TYPE = ocv.ORB_HARRIS_SCORE
+ORB_PATCH_SIZE = 31
 
 #========== BRUTE FORCE MATCHER PARAMETERS =====================================
 FLANN_INDEX_KDTREE = 0 # FLANN based matching algorithm selection(SIFT,SURF) #
 FLANN_INDEX_LSH = 1 # FLANN based matching algorithm (ORB,BRIEF) #
 TABLE_NUMBER = 6 # Index param value for FLANN_INDEX_LSH #
 KEY_SIZE = 12 # Index param value for FLANN_INDEX_LSH #
-MULTI_PROBE_LEVEL = 1 # Index param value for FLANN_INDEX_LSH #
+MULTI_PROBE_LEVEL = 2 # Index param value for FLANN_INDEX_LSH #
 TREES = 5 # Index param value for FLANN_INDEX_KDTREE #
 CHECKS = 100 # search param value for number of checks #
 
@@ -96,11 +101,26 @@ def colorChange(image, destColor):
 # Detects the key points of a given image using a given algorithm #
 def detectFeatures(image, method):
     if(method == "SIFT"):
-        algorithm = ocv.SIFT()
+        algorithm = ocv.SIFT(SIFT_NUMBER_OF_FEATURES
+                             , SIFT_NUMBER_OF_OCTAVE_LAYERS 
+                             , SIFT_CONTRAST_THRESHOLD
+                             , SIFT_EDGE_THRESHOLD
+                             , SIFT_SIGMA)
     elif(method == "SURF"):
-        algorithm = ocv.SURF(HESSIAN_THRESHOLD)
-    elif(method == "FAST"):
-        algorithm = ocv.FastFeatureDetector()
+        algorithm = ocv.SURF(SURF_HESSIAN_THRESHOLD
+                             , SURF_NUMBER_OF_OCTAVES
+                             , SURF_NUMBER_OF_OCTAVE_LAYERS
+                             , SURF_USE_128
+                             , SURF_ORIENTATION)
+    elif(method == "ORB"):
+        algorithm = ocv.ORB(ORB_NUMBER_OF_FEATURES
+                            , ORB_SCALE_FACTOR 
+                            , ORB_N_LEVELS 
+                            , ORB_EDGE_THRESHOLD 
+                            , ORB_FIRST_LEVEL 
+                            , ORB_WTA_K
+                            , ORB_SCORE_TYPE 
+                            , ORB_PATCH_SIZE)
 
     keyPoints = algorithm.detect(image, None)
     return (keyPoints,algorithm)
@@ -117,7 +137,11 @@ def computeDescriptors(image, method):
 # Matches the descriptor sets using a matching technique give by user #    
 def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
     if(matching_algorithm == "BRUTE_FORCE"):
-        algorithm = ocv.BFMatcher(ocv.NORM_L2)
+        if(feature_algorithm == "SIFT" or feature_algorithm == "SURF"):
+            distance_type = ocv.NORM_L2
+        else:
+            distance_type = ocv.NORM_HAMMING
+        algorithm = ocv.BFMatcher(distance_type)
         if(isknnmatch == True):
             matches = algorithm.knnMatch(desc1,desc2,k=2)
         else:
@@ -150,14 +174,12 @@ def getMatchingKeypoints(match,src_key,dest_key):
 def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
     src_kp_image = ocv.drawKeypoints(src_image, src_matches, color=(0,255,255))
     dest_kp_image = ocv.drawKeypoints(dest_image, dest_matches, color=(0,255,255))
-
     plot.subplot(2,1,1)
     plot.imshow(src_kp_image)
-
     plot.subplot(2,1,2)
     plot.imshow(dest_kp_image)
-
     plot.show()
+
 
 #====== Reading template elements ==============================================
 
@@ -173,8 +195,8 @@ banana = readImage("../../../Pictures/stockimages/github.jpeg",GRAY)
 small_banana = readImage("../../../Pictures/stockimages/small_banana.jpeg",GRAY)
 
 def featureDetection():
-    src_key, src_desc = computeDescriptors(small_banana,"SIFT")
-    dest_key, dest_desc = computeDescriptors(banana,"SIFT")
+    src_key, src_desc = computeDescriptors(input_box,"SIFT")
+    dest_key, dest_desc = computeDescriptors(img,"SIFT")
     print "Source Keypoints: ",len(src_key)
     print "Destination Keypoints: ",len(dest_key)
     print "Source Descriptors: ",len(src_desc)
@@ -189,7 +211,7 @@ def featureDetection():
         print "Training Desc Index:", g.trainIdx, ", Query Desc Index: ", g.queryIdx
 
     kps = getMatchingKeypoints(match,src_key,dest_key)
-    showMatchingPoints(small_banana,src_indices,banana,dest_indices)
+    showMatchingPoints(input_box,src_indices,img,dest_indices)
     #plot.subplot(2,1,1), plot.imshow(input_box)
     #plot.subplot(2,1,2), plot.imshow(img)
     #plot.show()
