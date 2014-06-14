@@ -52,22 +52,49 @@ template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 
 #======= Template Matching Methods =============================================
 
-methods = ['ocv.TM_CCOEFF','ocv.TM_CCOEFF_NORMED','ocv.TM_CCOR']
-matching_method = eval(methods[1])
+methods = ['ocv.TM_CCOEFF','ocv.TM_CCOEFF_NORMED','ocv.TM_CCOR','ocv.TM_SQDIFF','ocv.TM_SQDIFF_NORMED']
+matching_method = eval(methods[4])
+
 
 #================ Function Declarations ========================================
+# Reads Image and returns a matrix of the image as per the flags #
+def readImage(image, flag):
+    m = ocv.imread(image, flag)
+    return m
+
+# Changes the color scheme of the image to one of BGR, GRAY, HSL #
+def colorChange(image, destColor):
+    c = ocv.cvtColor(image, destColor)
+    return c
+
 def matchImage(image,template):
     height, width = template.shape
     match = ocv.matchTemplate(image,template,matching_method)
     min_val, max_val, min_loc, max_loc = ocv.minMaxLoc(match)
-    top_left = max_loc
+    if matching_method == "TM_SQDIFF" or matching_method == "TM_SQDIFF_NORMED":
+        top_left = min_loc
+    else:
+        top_left = max_loc
     bottom_right = (top_left[0] + width, top_left[1]+height)
     return [top_left, bottom_right, width, height]
+
+#====== Reading template elements ==============================================
+
+input_box = readImage("inputbox.png",GRAY)
+check_box = readImage("checkbox.png", GRAY)
+menu = readImage("menu.png", GRAY)
+radio_button = readImage("radio.png", GRAY)
+button = readImage("button.png", GRAY)
+tab = readImage("tab.png", GRAY)
+drop_down = readImage("dropdown.png",GRAY)
+slider = readImage("slider.png", GRAY)
+banana = readImage("../../../Pictures/stockimages/github.jpeg",GRAY)
+small_banana = readImage("../../../Pictures/stockimages/small_banana.jpeg",GRAY)
 
 
 #================= Template matching technique =================================
 def templateMatching():
-    elements  = ["input"
+    elements  = ["input_box"
                  , "check_box"
                  , "radio_button"
                  , "menu"
@@ -89,15 +116,6 @@ def templateMatching():
 
 
 #============= Feature Detection Functions =====================================
-# Reads Image and returns a matrix of the image as per the flags #
-def readImage(image, flag):
-    m = ocv.imread(image, flag)
-    return m
-
-# Changes the color scheme of the image to one of BGR, GRAY, HSL #
-def colorChange(image, destColor):
-    c = ocv.cvtColor(image, destColor)
-    return c
 # Detects the key points of a given image using a given algorithm #
 def detectFeatures(image, method):
     if(method == "SIFT"):
@@ -124,16 +142,19 @@ def detectFeatures(image, method):
 
     keyPoints = algorithm.detect(image, None)
     return (keyPoints,algorithm)
+
 # Displays the key points of a image given the keypoints #
 def showKeyPoints(image,keypoints,flag):
     kp_image = ocv.drawKeypoints(image,keypoints,color=(0,255,255))
     plot.imshow(kp_image)
     plot.show()
+
 # Computes the desciptors from keypoints using the algorithm provided #
 def computeDescriptors(image, method):
     keypoints, algorithm = detectFeatures(image,method)
     keypoints, descriptors = algorithm.compute(image,keypoints)
     return keypoints, descriptors
+
 # Matches the descriptor sets using a matching technique give by user #    
 def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
     if(matching_algorithm == "BRUTE_FORCE"):
@@ -161,6 +182,7 @@ def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
         else:
             matches = algorithm.match(desc1,desc2)
     return matches
+
 # Return the matching keypoints from the training image that is found in 
 # query image 
 # trainIdx is the corresponding matching point from the training index 
@@ -181,18 +203,6 @@ def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
     plot.show()
 
 
-#====== Reading template elements ==============================================
-
-input_box = readImage("inputbox.png",GRAY)
-check_box = readImage("checkbox.png", GRAY)
-menu = readImage("menu.png", GRAY)
-radio_button = readImage("radio.png", GRAY)
-button = readImage("button.png", GRAY)
-tab = readImage("tab.png", GRAY)
-drop_down = readImage("dropdown.png",GRAY)
-slider = readImage("slider.png", GRAY)
-banana = readImage("../../../Pictures/stockimages/github.jpeg",GRAY)
-small_banana = readImage("../../../Pictures/stockimages/small_banana.jpeg",GRAY)
 
 def featureDetection():
     src_key, src_desc = computeDescriptors(input_box,"SIFT")
@@ -238,7 +248,7 @@ def featureDetection():
 #    plot.imshow(img3,'gray')
 #    plot.show()
 #==================== Main function calls ======================================
-featureDetection()
+templateMatching()
 
 
 
