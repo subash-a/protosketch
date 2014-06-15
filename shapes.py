@@ -12,6 +12,7 @@ import page_builder as pbuild
 GRAY = ocv.IMREAD_GRAYSCALE # read image as gray scale image #
 ASIS = ocv.IMREAD_UNCHANGED # read image as is ,also include alpha channels #
 COLOR = ocv.IMREAD_COLOR # read image as colored image no alpha #
+MATCHING_THRESHOLD = 0.95
 
 #======== SIFT PARAMETERS ======================================================
 SIFT_NUMBER_OF_FEATURES = 100
@@ -47,13 +48,11 @@ TREES = 5 # Index param value for FLANN_INDEX_KDTREE #
 CHECKS = 100 # search param value for number of checks #
 
 print "====== This is an experiment for shape detection ====="
-img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
-template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 
 #======= Template Matching Methods =============================================
 
 methods = ['ocv.TM_CCOEFF','ocv.TM_CCOEFF_NORMED','ocv.TM_CCOR','ocv.TM_SQDIFF','ocv.TM_SQDIFF_NORMED']
-matching_method = eval(methods[4])
+matching_method = eval(methods[1])
 
 
 #================ Function Declarations ========================================
@@ -71,15 +70,23 @@ def matchImage(image,template):
     height, width = template.shape
     match = ocv.matchTemplate(image,template,matching_method)
     min_val, max_val, min_loc, max_loc = ocv.minMaxLoc(match)
-    if matching_method == "TM_SQDIFF" or matching_method == "TM_SQDIFF_NORMED":
-        top_left = min_loc
-    else:
-        top_left = max_loc
+    top_left = max_loc
     bottom_right = (top_left[0] + width, top_left[1]+height)
     return [top_left, bottom_right, width, height]
 
+def matchMultipleImage(image, template):
+    height, width = template.shape
+    match = ocv.matchTemplate(image, template, matching_method)
+    loc = np.where(match > MATCHING_THRESHOLD)
+    locations = []
+    for pt in zip(*loc[::-1]):
+        tup = (pt, width, height)
+        locations.append(tup)
+    return locations
+    
 #====== Reading template elements ==============================================
-
+img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
+template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
 input_box = readImage("inputbox.png",GRAY)
 check_box = readImage("checkbox.png", GRAY)
 menu = readImage("menu.png", GRAY)
@@ -88,11 +95,16 @@ button = readImage("button.png", GRAY)
 tab = readImage("tab.png", GRAY)
 drop_down = readImage("dropdown.png",GRAY)
 slider = readImage("slider.png", GRAY)
-banana = readImage("../../../Pictures/stockimages/github.jpeg",GRAY)
-small_banana = readImage("../../../Pictures/stockimages/small_banana.jpeg",GRAY)
-
+form = readImage("form.png", GRAY)
 
 #================= Template matching technique =================================
+def extractComponentFromImage(image, component, document):
+    result = matchMultipleImage(image, eval(component))
+    for c, width, height in result:
+        ocv.rectangle(form, c,(c[0] + width , c[1] + height),(0,255,0),2)
+        pbuild.addComponent(document, component, c, width, height)
+    return document
+    
 def templateMatching():
     elements  = ["input_box"
                  , "check_box"
@@ -105,14 +117,10 @@ def templateMatching():
     cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
     document = pbuild.createDocument()
     for e in elements:
-        coords = matchImage(img,eval(e))
-        ocv.rectangle(img, coords[0], coords[1], 0 , 2)
-        pbuild.addComponent(document,e,[coords[0][1],coords[0][0],coords[1][0],coords[1][1],coords[2],coords[3]])
-        
+        document = extractComponentFromImage(form, e, document)
     html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
-    pbuild.showXML(html)
-    plot.imshow(img,cmap="gray")
-    plot.show()
+    ET = XML.ElementTree(html)
+    ET.write("output/index.html")
 
 
 #============= Feature Detection Functions =====================================
