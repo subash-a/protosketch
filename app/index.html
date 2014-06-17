@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../output/utils/css/bootstrap.css"/>
+    <link rel="stylesheet" type="text/css" href="../output/utils/css/uploadstyle.css"/>
+  </head>
+  <body>
+    <div id="upload-container">
+      <input id="target-file" type="file"/>
+    </div>
+    <script type="text/javascript" src="../output/utils/js/jquery-1.7.1.js"></script>
+    <script type="text/javascript" src="../output/utils/js/bootstrap.js"></script>
+    <script>
+      var readFile = function (file) {
+      console.log(file);
+      };
+      $("#target-file").on("change", readFile);
+    </script>
+  </body>
+</html>

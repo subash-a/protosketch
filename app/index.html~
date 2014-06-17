@@ -1,0 +1,14 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="../output/utils/css/bootstrap.css"/>
+  </head>
+  <body>
+    <div id="upload-container">
+      <input id="target-file" type="file"/>
+    </div>
+    <script type="text/javascript" src="../output/utils/js/bootstrap.js"></script>
+    <script>
+      var readFile = function (file) {};
+    </script>
+  </body>
+</html>
