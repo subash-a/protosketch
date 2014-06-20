@@ -85,23 +85,23 @@ def matchMultipleImage(image, template):
     return locations
     
 #====== Reading template elements ==============================================
-img = ocv.imread("dropdown.png", ocv.IMREAD_GRAYSCALE)
-template = ocv.imread("tab.png", ocv.IMREAD_GRAYSCALE)
-input_box = readImage("inputbox.png",GRAY)
-check_box = readImage("checkbox.png", GRAY)
-menu = readImage("menu.png", GRAY)
-radio_button = readImage("radio.png", GRAY)
-button = readImage("button.png", GRAY)
-tab = readImage("tab.png", GRAY)
-drop_down = readImage("dropdown.png",GRAY)
-slider = readImage("slider.png", GRAY)
-form = readImage("form.png", GRAY)
-
+img = ocv.imread("assets/dropdown.png", ocv.IMREAD_GRAYSCALE)
+template = ocv.imread("assets/tab.png", ocv.IMREAD_GRAYSCALE)
+input_box = readImage("assets/inputbox.png",GRAY)
+check_box = readImage("assets/checkbox.png", GRAY)
+menu = readImage("assets/menu.png", GRAY)
+radio_button = readImage("assets/radio.png", GRAY)
+button = readImage("assets/button.png", GRAY)
+tab = readImage("assets/tab.png", GRAY)
+drop_down = readImage("assets/dropdown.png",GRAY)
+slider = readImage("assets/slider.png", GRAY)
+form = readImage("assets/form.png", GRAY)
+sample = readImage("assets/SketchedTemplate.png",GRAY)
 #================= Template matching technique =================================
 def extractComponentFromImage(image, component, document):
     result = matchMultipleImage(image, eval(component))
     for c, width, height in result:
-        ocv.rectangle(form, c,(c[0] + width , c[1] + height),(0,255,0),2)
+        ocv.rectangle(sample, c,(c[0] + width , c[1] + height),(0,255,0),2)
         pbuild.addComponent(document, component, c, width, height)
     return document
     
@@ -117,13 +117,16 @@ def templateMatching():
     cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
     document = pbuild.createDocument()
     for e in elements:
-        document = extractComponentFromImage(form, e, document)
+        document = extractComponentFromImage(sample, e, document)
     html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
     ET = XML.ElementTree(html)
     ET.write("output/index.html")
 
 
 #============= Feature Detection Functions =====================================
+# Preprocess Image for better detection of descriptors
+def preProcess(image):
+    stage_1 = ocv.gaussian(image)
 # Detects the key points of a given image using a given algorithm #
 def detectFeatures(image, method):
     if(method == "SIFT"):
@@ -204,22 +207,42 @@ def getMatchingKeypoints(match,src_key,dest_key):
 def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
     src_kp_image = ocv.drawKeypoints(src_image, src_matches, color=(0,255,255))
     dest_kp_image = ocv.drawKeypoints(dest_image, dest_matches, color=(0,255,255))
-    plot.subplot(2,1,1)
-    plot.imshow(src_kp_image)
-    plot.subplot(2,1,2)
-    plot.imshow(dest_kp_image)
-    plot.show()
+#    plot.subplot(2,1,1)
+#    plot.imshow(src_kp_image)
+#    plot.subplot(2,1,2)
+#    plot.imshow(dest_kp_image)
+#    plot.show()
 
 
 
 def featureDetection():
-    src_key, src_desc = computeDescriptors(input_box,"SIFT")
-    dest_key, dest_desc = computeDescriptors(img,"SIFT")
+    FD_METHOD = "SIFT"
+    FM_METHOD = "FLANN"
+    print "==== Feature Detection ==="
+    print "Feature detection method: ",FD_METHOD
+    print "===SIFT PARAMETERS==="
+    print "SIFT_NUMBER_OF_FEATURES: ",SIFT_NUMBER_OF_FEATURES
+    print "SIFT_NUMBER_OF_OCTAVE_LAYERS: ",SIFT_NUMBER_OF_OCTAVE_LAYERS
+    print "SIFT_CONTRAST_THRESHOLD: ",SIFT_CONTRAST_THRESHOLD
+    print "SIFT_EDGE_THRESHOLD: ",SIFT_EDGE_THRESHOLD
+    print "SIFT_SIGMA: ",SIFT_SIGMA
+    print "=== Featue Matching ==="
+    print "Feature matching methos: ",FM_METHOD
+    print "=== FLANN PARAMETERS ==="
+    print "FLANN_INDEX_KDTREE: ",FLANN_INDEX_KDTREE
+    print "FLANN_INDEX_LSH : ",FLANN_INDEX_LSH 
+    print "TABLE_NUMBER : ",TABLE_NUMBER 
+    print "KEY_SIZE : ",KEY_SIZE 
+    print "MULTI_PROBE_LEVEL : ",MULTI_PROBE_LEVEL 
+    print "TREES : ",TREES 
+    print "CHECKS : ",CHECKS 
+    src_key, src_desc = computeDescriptors(input_box,FD_METHOD)
+    dest_key, dest_desc = computeDescriptors(sample,FD_METHOD)
     print "Source Keypoints: ",len(src_key)
     print "Destination Keypoints: ",len(dest_key)
     print "Source Descriptors: ",len(src_desc)
     print "Destination Descriptors: ",len(dest_desc)
-    match = matchFeatures(src_desc,dest_desc,"FLANN",False,"SIFT")
+    match = matchFeatures(src_desc,dest_desc,FM_METHOD,False,FD_METHOD)
     print "Number of Matches: ",len(match)
     src_indices = []
     dest_indices = []
@@ -229,14 +252,14 @@ def featureDetection():
         print "Training Desc Index:", g.trainIdx, ", Query Desc Index: ", g.queryIdx
 
     kps = getMatchingKeypoints(match,src_key,dest_key)
-    showMatchingPoints(input_box,src_indices,img,dest_indices)
-    #plot.subplot(2,1,1), plot.imshow(input_box)
-    #plot.subplot(2,1,2), plot.imshow(img)
-    #plot.show()
-#    src_pts = np.float32([src_key[m.queryIdx].pt 
-#                          for m,n in matches]).reshape(-1,1,2)
-#    dest_pts = np.float32([dest_key[m.trainIdx].pt 
-#                           for m,n in matches]).reshape(-1,1,2)
+    showMatchingPoints(input_box,src_indices,sample,dest_indices)
+ #   plot.subplot(2,1,1), plot.imshow(input_box)
+ #   plot.subplot(2,1,2), plot.imshow(sample)
+ #   plot.show()
+ #   src_pts = np.float32([src_key[m.queryIdx].pt 
+ #                         for m,n in match]).reshape(-1,1,2)
+ #   dest_pts = np.float32([dest_key[m.trainIdx].pt 
+ #                          for m,n in match]).reshape(-1,1,2)
 #
 #    print src_pts
 #    print dest_pts
@@ -256,8 +279,8 @@ def featureDetection():
 #    plot.imshow(img3,'gray')
 #    plot.show()
 #==================== Main function calls ======================================
-templateMatching()
-
+#templateMatching()
+featureDetection()
 
 
 

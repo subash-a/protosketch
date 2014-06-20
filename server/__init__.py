@@ -12,9 +12,11 @@ def intdex_load():
 @app.route('/upload', methods=['POST'])
 def handle_upload():
     if request.method == 'POST':
-        return "uploaded"
-    else:
-        return "This is not a GET"
+        print "POST Method"
+        if request.files["name"]:
+            print "file received"
+        else:
+            return "Did not get uploaded"
 
 if  __name__ == '__main__':
     app.debug = True

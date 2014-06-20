@@ -3,7 +3,9 @@
     <link rel="stylesheet" type="text/css" href="static/css/bootstrap.css"/>
   </head>
   <body>
-    <div id="file-uploader"><input type="file" id="file-input"/></div>
+    <form enctype="multipart/form-data">
+      <input type="file" id="file-input"/>
+    </form>
     <div id="progess-meter">Progress:<span id="progress-value"></span></div>
     <script type="text/javascript" src="static/js/jquery-1.7.1.js"></script>
     <script type="text/javascript" src="static/js/bootstrap.js"></script>
@@ -23,7 +25,10 @@
       xhr.upload.addEventListener("progress", updateProgress, false);
       xhr.open("POST","upload");
       freader.onload = function(e) {
-      xhr.send(e.target.result);
+      var file = e.target.result;
+      var fdata = new FormData();
+      fdata.append("file",file);
+      xhr.send(fdata);
       };
     </script>
   </body>
