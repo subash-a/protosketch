@@ -21,7 +21,7 @@ MATCHING_THRESHOLD = 0.95
 IMAGE_THRESHOLD = 127 # Image thresholding parameter for Adaptive Thresholding
 IMAGE_THRESHOLD_MAXVAL = 255 #In Image thresholding value to be given for > thr
 IMAGE_THRESHOLD_BLOCK_SIZE = 29 #Neighborhood size in which to do thresholding
-IMAGE_THRESHOLD_CONST = 2
+IMAGE_THRESHOLD_CONST = 5
 #======== SIFT PARAMETERS ======================================================
 SIFT_NUMBER_OF_FEATURES = 100
 SIFT_NUMBER_OF_OCTAVE_LAYERS = 3
@@ -97,18 +97,13 @@ def matchMultipleImage(image, template):
     return locations
     
 #====== Reading template elements ==============================================
-img = ocv.imread("assets/dropdown.png", ocv.IMREAD_GRAYSCALE)
-template = ocv.imread("assets/tab.png", ocv.IMREAD_GRAYSCALE)
-input_box = readImage("assets/inputbox.png",GRAY)
-check_box = readImage("assets/checkbox.png", GRAY)
-menu = readImage("assets/menu.png", GRAY)
-radio_button = readImage("assets/radio.png", GRAY)
-button = readImage("assets/button.png", GRAY)
-tab = readImage("assets/tab.png", GRAY)
-drop_down = readImage("assets/dropdown.png",GRAY)
-slider = readImage("assets/slider.png", GRAY)
-form = readImage("assets/form.png", GRAY)
-sample = readImage("assets/SketchedTemplate.png",GRAY)
+checkbox = readImage("assets/components/checkbox.png", GRAY)
+dropdown = readImage("assets/components/dropdown.png", GRAY)
+radio = readImage("assets/components/radio.png", GRAY)
+button = readImage("assets/components/button.png", GRAY)
+tab = readImage("assets/components/tab.png", GRAY)
+slider = readImage("assets/components/slider.png", GRAY)
+sample = readImage("assets/test_images/sketch_2.jpg",GRAY)
 #================= Template matching technique =================================
 def extractComponentFromImage(image, component, document):
     result = matchMultipleImage(image, eval(component))
@@ -118,10 +113,9 @@ def extractComponentFromImage(image, component, document):
     return document
     
 def templateMatching():
-    elements  = ["input_box"
-                 , "check_box"
-                 , "radio_button"
-                 , "menu"
+    elements  = ["checkbox"
+                 , "radio"
+                 , "dropdown"
                  , "button"
                  , "tab"    
                  , "slider"]
@@ -149,13 +143,19 @@ def dialateImage(image):
                                  , iterations=1)
     return dialated_image
 
-def thresholdImage(image):
-    threshold_image = ocv.adaptiveThreshold(image
-                                            , IMAGE_THRESHOLD_MAXVAL
-                                            , GAUSS_THRESHOLD
-                                            , BIN_THRESH
-                                            , IMAGE_THRESHOLD_BLOCK_SIZE
-                                            , IMAGE_THRESHOLD_CONST)
+def thresholdImage(image,binary_flag):
+    if binary_flag:
+        retval, threshold_image = ocv.threshold(image
+                                                , IMAGE_THRESHOLD
+                                                , IMAGE_THRESHOLD_MAXVAL
+                                                , BIN_THRESH)
+    else:
+        threshold_image = ocv.adaptiveThreshold(image
+                                                , IMAGE_THRESHOLD_MAXVAL
+                                                , GAUSS_THRESHOLD
+                                                , BIN_THRESH
+                                                , IMAGE_THRESHOLD_BLOCK_SIZE
+                                                , IMAGE_THRESHOLD_CONST)
     return threshold_image
 
 def removeImageNoise(image):
@@ -169,12 +169,16 @@ def smoothImage(image):
     return smooth_image
 
 def preProcess(image):
-    output = thresholdImage(image)
-    output = removeImageNoise(output)
-#    output = smoothImage(image)
-    output = erodeImage(output)
-
+#    output = thresholdImage(image,False)
+#    output = erodeImage(output)
+#    output = removeImageNoise(output)
+    output = smoothImage(image)
     return output
+
+#Display all the parameters of the given feature extraction method
+def showParameters(params):
+    for x in params:
+        print x,": ",eval(x)
 
 # Detects the key points of a given image using a given algorithm #
 def detectFeatures(image, method):
@@ -184,12 +188,24 @@ def detectFeatures(image, method):
                              , SIFT_CONTRAST_THRESHOLD
                              , SIFT_EDGE_THRESHOLD
                              , SIFT_SIGMA)
+        showParameters(["SIFT_NUMBER_OF_FEATURES"
+                             , "SIFT_NUMBER_OF_OCTAVE_LAYERS "
+                             , "SIFT_CONTRAST_THRESHOLD"
+                             , "SIFT_EDGE_THRESHOLD"
+                             , "SIFT_SIGMA"])
+
     elif(method == "SURF"):
         algorithm = ocv.SURF(SURF_HESSIAN_THRESHOLD
                              , SURF_NUMBER_OF_OCTAVES
                              , SURF_NUMBER_OF_OCTAVE_LAYERS
                              , SURF_USE_128
                              , SURF_ORIENTATION)
+        showParameters(["SURF_HESSIAN_THRESHOLD"
+                             , "SURF_NUMBER_OF_OCTAVES"
+                             , "SURF_NUMBER_OF_OCTAVE_LAYERS"
+                             , "SURF_USE_128"
+                             , "SURF_ORIENTATION"])
+
     elif(method == "ORB"):
         algorithm = ocv.ORB(ORB_NUMBER_OF_FEATURES
                             , ORB_SCALE_FACTOR 
@@ -199,6 +215,14 @@ def detectFeatures(image, method):
                             , ORB_WTA_K
                             , ORB_SCORE_TYPE 
                             , ORB_PATCH_SIZE)
+        showParameters(["ORB_NUMBER_OF_FEATURES"
+                            , "ORB_SCALE_FACTOR "
+                            , "ORB_N_LEVELS "
+                            , "ORB_EDGE_THRESHOLD "
+                            , "ORB_FIRST_LEVEL "
+                            , "ORB_WTA_K"
+                            , "ORB_SCORE_TYPE "
+                            , "ORB_PATCH_SIZE"])
 
     keyPoints = algorithm.detect(image, None)
     return (keyPoints,algorithm)
@@ -271,18 +295,10 @@ def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
 
 
 def featureDetection():
-    FD_METHOD = "SIFT"
+    FD_METHOD = "SURF"
     FM_METHOD = "FLANN"
-    src_image = menu
+    src_image = checkbox
     dest_image = preProcess(sample)
-    print "==== Feature Detection ==="
-    print "Feature detection method: ",FD_METHOD
-    print "===SIFT PARAMETERS==="
-    print "SIFT_NUMBER_OF_FEATURES: ",SIFT_NUMBER_OF_FEATURES
-    print "SIFT_NUMBER_OF_OCTAVE_LAYERS: ",SIFT_NUMBER_OF_OCTAVE_LAYERS
-    print "SIFT_CONTRAST_THRESHOLD: ",SIFT_CONTRAST_THRESHOLD
-    print "SIFT_EDGE_THRESHOLD: ",SIFT_EDGE_THRESHOLD
-    print "SIFT_SIGMA: ",SIFT_SIGMA
     print "=== Featue Matching ==="
     print "Feature matching methos: ",FM_METHOD
     print "=== FLANN PARAMETERS ==="
