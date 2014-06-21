@@ -12,8 +12,16 @@ import page_builder as pbuild
 GRAY = ocv.IMREAD_GRAYSCALE # read image as gray scale image #
 ASIS = ocv.IMREAD_UNCHANGED # read image as is ,also include alpha channels #
 COLOR = ocv.IMREAD_COLOR # read image as colored image no alpha #
+BIN_THRESH = ocv.THRESH_BINARY
+INVBIN_THRESH = ocv.THRESH_BINARY_INV
+MEAN_THRESHOLD = ocv.ADAPTIVE_THRESH_MEAN_C
+GAUSS_THRESHOLD = ocv.ADAPTIVE_THRESH_GAUSSIAN_C
 MATCHING_THRESHOLD = 0.95
-
+#======= THRESHOLDING PARAMETERS ===============================================
+IMAGE_THRESHOLD = 127 # Image thresholding parameter for Adaptive Thresholding
+IMAGE_THRESHOLD_MAXVAL = 255 #In Image thresholding value to be given for > thr
+IMAGE_THRESHOLD_BLOCK_SIZE = 29 #Neighborhood size in which to do thresholding
+IMAGE_THRESHOLD_CONST = 2
 #======== SIFT PARAMETERS ======================================================
 SIFT_NUMBER_OF_FEATURES = 100
 SIFT_NUMBER_OF_OCTAVE_LAYERS = 3
@@ -51,7 +59,11 @@ print "====== This is an experiment for shape detection ====="
 
 #======= Template Matching Methods =============================================
 
-methods = ['ocv.TM_CCOEFF','ocv.TM_CCOEFF_NORMED','ocv.TM_CCOR','ocv.TM_SQDIFF','ocv.TM_SQDIFF_NORMED']
+methods = ['ocv.TM_CCOEFF'
+           , 'ocv.TM_CCOEFF_NORMED'
+           , 'ocv.TM_CCOR'
+           , 'ocv.TM_SQDIFF'
+           , 'ocv.TM_SQDIFF_NORMED']
 matching_method = eval(methods[1])
 
 
@@ -125,8 +137,45 @@ def templateMatching():
 
 #============= Feature Detection Functions =====================================
 # Preprocess Image for better detection of descriptors
+def erodeImage(image):
+    erode_kernel = np.ones((4,4),np.uint8)
+    eroded_image = ocv.erode(image,erode_kernel,iterations=1)
+    return eroded_image
+
+def dialateImage(image):
+    dialate_kernel = np.ones((4,4),np.uint8)
+    dialated_image = ocv.dialate(image
+                                 , dialate_kernel
+                                 , iterations=1)
+    return dialated_image
+
+def thresholdImage(image):
+    threshold_image = ocv.adaptiveThreshold(image
+                                            , IMAGE_THRESHOLD_MAXVAL
+                                            , GAUSS_THRESHOLD
+                                            , BIN_THRESH
+                                            , IMAGE_THRESHOLD_BLOCK_SIZE
+                                            , IMAGE_THRESHOLD_CONST)
+    return threshold_image
+
+def removeImageNoise(image):
+    kernel = np.ones((4,4),np.uint8)
+    i_opened = ocv.morphologyEx(image,ocv.MORPH_OPEN,kernel)
+    i_closed = ocv.morphologyEx(i_opened,ocv.MORPH_CLOSE,kernel)
+    return i_closed
+
+def smoothImage(image):
+    smooth_image = ocv.GaussianBlur(image,(3,3),0,0)
+    return smooth_image
+
 def preProcess(image):
-    stage_1 = ocv.gaussian(image)
+    output = thresholdImage(image)
+    output = removeImageNoise(output)
+#    output = smoothImage(image)
+    output = erodeImage(output)
+
+    return output
+
 # Detects the key points of a given image using a given algorithm #
 def detectFeatures(image, method):
     if(method == "SIFT"):
@@ -204,20 +253,28 @@ def getMatchingKeypoints(match,src_key,dest_key):
         matching_keypoints.append(dest_key[m.trainIdx])
     return matching_keypoints
 
+def getKnnMatchingKeypoints(match,src_key,dest_key):
+    matching_keypoints = []
+    for m in match:
+        matching_keypoints.append(dest_key[m[0].trainIdx])
+    return matching_keypoints
+
 def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
     src_kp_image = ocv.drawKeypoints(src_image, src_matches, color=(0,255,255))
     dest_kp_image = ocv.drawKeypoints(dest_image, dest_matches, color=(0,255,255))
-#    plot.subplot(2,1,1)
-#    plot.imshow(src_kp_image)
-#    plot.subplot(2,1,2)
-#    plot.imshow(dest_kp_image)
-#    plot.show()
+    plot.subplot(2,1,1)
+    plot.imshow(src_kp_image)
+    plot.subplot(2,1,2)
+    plot.imshow(dest_kp_image)
+    plot.show()
 
 
 
 def featureDetection():
     FD_METHOD = "SIFT"
     FM_METHOD = "FLANN"
+    src_image = menu
+    dest_image = preProcess(sample)
     print "==== Feature Detection ==="
     print "Feature detection method: ",FD_METHOD
     print "===SIFT PARAMETERS==="
@@ -236,26 +293,29 @@ def featureDetection():
     print "MULTI_PROBE_LEVEL : ",MULTI_PROBE_LEVEL 
     print "TREES : ",TREES 
     print "CHECKS : ",CHECKS 
-    src_key, src_desc = computeDescriptors(input_box,FD_METHOD)
-    dest_key, dest_desc = computeDescriptors(sample,FD_METHOD)
+    src_key, src_desc = computeDescriptors(src_image,FD_METHOD)
+    dest_key, dest_desc = computeDescriptors(dest_image,FD_METHOD)
+    print "===== Feature Descriptors ===="
     print "Source Keypoints: ",len(src_key)
     print "Destination Keypoints: ",len(dest_key)
     print "Source Descriptors: ",len(src_desc)
     print "Destination Descriptors: ",len(dest_desc)
-    match = matchFeatures(src_desc,dest_desc,FM_METHOD,False,FD_METHOD)
+    match = matchFeatures(src_desc,dest_desc,FM_METHOD,True,FD_METHOD)
     print "Number of Matches: ",len(match)
     src_indices = []
     dest_indices = []
-    for g in match:
-        src_indices.append(src_key[g.queryIdx])
-        dest_indices.append(dest_key[g.trainIdx])
-        print "Training Desc Index:", g.trainIdx, ", Query Desc Index: ", g.queryIdx
+    print "===== Matching Features ====="
+    for g in match:        
+        src_indices.append(src_key[g[0].queryIdx])
+        dest_indices.append(dest_key[g[0].trainIdx])
+        print "Training Desc Index:", g[0].trainIdx, ", Query Desc Index: ", g[0].queryIdx
+        print "Distance: ",g[0].distance
 
-    kps = getMatchingKeypoints(match,src_key,dest_key)
-    showMatchingPoints(input_box,src_indices,sample,dest_indices)
- #   plot.subplot(2,1,1), plot.imshow(input_box)
- #   plot.subplot(2,1,2), plot.imshow(sample)
- #   plot.show()
+    kps = getKnnMatchingKeypoints(match,src_key,dest_key)
+    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
+#    plot.subplot(2,1,1), plot.imshow(input_box)
+#    plot.subplot(2,1,2), plot.imshow(sample)
+#    plot.show()
  #   src_pts = np.float32([src_key[m.queryIdx].pt 
  #                         for m,n in match]).reshape(-1,1,2)
  #   dest_pts = np.float32([dest_key[m.trainIdx].pt 
