@@ -16,9 +16,14 @@ BIN_THRESH = ocv.THRESH_BINARY
 INVBIN_THRESH = ocv.THRESH_BINARY_INV
 MEAN_THRESHOLD = ocv.ADAPTIVE_THRESH_MEAN_C
 GAUSS_THRESHOLD = ocv.ADAPTIVE_THRESH_GAUSSIAN_C
+SCALE_CUBIC = ocv.INTER_CUBIC
+SCALE_LINEAR = ocv.INTER_LINEAR
+SCALE_AREA = ocv.INTER_AREA
 MATCHING_THRESHOLD = 0.95
+ERODE_KERNEL_SIZE = (3,3)
+DILATE_KERNEL_SIZE = (2,2)
 #======= THRESHOLDING PARAMETERS ===============================================
-IMAGE_THRESHOLD = 127 # Image thresholding parameter for Adaptive Thresholding
+IMAGE_THRESHOLD = 187 # Image thresholding parameter for Adaptive Thresholding
 IMAGE_THRESHOLD_MAXVAL = 255 #In Image thresholding value to be given for > thr
 IMAGE_THRESHOLD_BLOCK_SIZE = 29 #Neighborhood size in which to do thresholding
 IMAGE_THRESHOLD_CONST = 5
@@ -103,7 +108,7 @@ radio = readImage("assets/components/radio.png", GRAY)
 button = readImage("assets/components/button.png", GRAY)
 tab = readImage("assets/components/tab.png", GRAY)
 slider = readImage("assets/components/slider.png", GRAY)
-sample = readImage("assets/test_images/sketch_2.jpg",GRAY)
+sample = readImage("assets/test_images/sketch_3.jpg",GRAY)
 #================= Template matching technique =================================
 def extractComponentFromImage(image, component, document):
     result = matchMultipleImage(image, eval(component))
@@ -132,16 +137,16 @@ def templateMatching():
 #============= Feature Detection Functions =====================================
 # Preprocess Image for better detection of descriptors
 def erodeImage(image):
-    erode_kernel = np.ones((4,4),np.uint8)
+    erode_kernel = np.ones(ERODE_KERNEL_SIZE,np.uint8)
     eroded_image = ocv.erode(image,erode_kernel,iterations=1)
     return eroded_image
 
-def dialateImage(image):
-    dialate_kernel = np.ones((4,4),np.uint8)
-    dialated_image = ocv.dialate(image
-                                 , dialate_kernel
+def dilateImage(image):
+    dilate_kernel = np.ones(DILATE_KERNEL_SIZE,np.uint8)
+    dilated_image = ocv.dilate(image
+                                 , dilate_kernel
                                  , iterations=1)
-    return dialated_image
+    return dilated_image
 
 def thresholdImage(image,binary_flag):
     if binary_flag:
@@ -159,20 +164,27 @@ def thresholdImage(image,binary_flag):
     return threshold_image
 
 def removeImageNoise(image):
-    kernel = np.ones((4,4),np.uint8)
-    i_opened = ocv.morphologyEx(image,ocv.MORPH_OPEN,kernel)
-    i_closed = ocv.morphologyEx(i_opened,ocv.MORPH_CLOSE,kernel)
+    kernel = np.ones((2,2),np.uint8)
+#    i_opened = ocv.morphologyEx(image,ocv.MORPH_OPEN,kernel)
+    i_closed = ocv.morphologyEx(image,ocv.MORPH_CLOSE,kernel)
     return i_closed
 
 def smoothImage(image):
     smooth_image = ocv.GaussianBlur(image,(3,3),0,0)
     return smooth_image
+# ====== Image transformation ==================================================
+def scaleImage(image):
+    height, width = image.shape[:2]
+    scaled_image = ocv.resize(image,None,fx=0.30,fy=0.30, interpolation = SCALE_AREA)
+    return scaled_image
 
 def preProcess(image):
-#    output = thresholdImage(image,False)
+    output = scaleImage(image)
+#    output = thresholdImage(output,False)
+#    output = dilateImage(output);
 #    output = erodeImage(output)
 #    output = removeImageNoise(output)
-    output = smoothImage(image)
+    output = smoothImage(output)
     return output
 
 #Display all the parameters of the given feature extraction method
@@ -188,6 +200,7 @@ def detectFeatures(image, method):
                              , SIFT_CONTRAST_THRESHOLD
                              , SIFT_EDGE_THRESHOLD
                              , SIFT_SIGMA)
+        print "=== SIFT PARAMETERS ==="
         showParameters(["SIFT_NUMBER_OF_FEATURES"
                              , "SIFT_NUMBER_OF_OCTAVE_LAYERS "
                              , "SIFT_CONTRAST_THRESHOLD"
@@ -200,6 +213,7 @@ def detectFeatures(image, method):
                              , SURF_NUMBER_OF_OCTAVE_LAYERS
                              , SURF_USE_128
                              , SURF_ORIENTATION)
+        print "=== SURF PARAMETERS ==="
         showParameters(["SURF_HESSIAN_THRESHOLD"
                              , "SURF_NUMBER_OF_OCTAVES"
                              , "SURF_NUMBER_OF_OCTAVE_LAYERS"
@@ -215,6 +229,7 @@ def detectFeatures(image, method):
                             , ORB_WTA_K
                             , ORB_SCORE_TYPE 
                             , ORB_PATCH_SIZE)
+        print "=== ORB PARAMETERS ==="
         showParameters(["ORB_NUMBER_OF_FEATURES"
                             , "ORB_SCALE_FACTOR "
                             , "ORB_N_LEVELS "
@@ -252,6 +267,14 @@ def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
         else:
             matches = algorithm.match(desc1,desc2)
     elif(matching_algorithm == "FLANN"):
+        print "=== FLANN PARAMETERS ==="
+        showParameters(["FLANN_INDEX_KDTREE"
+                        , "FLANN_INDEX_LSH"
+                        , "TABLE_NUMBER"
+                        , "MULTI_PROBE_LEVEL"
+                        , "CHECKS"
+                        , "TREES"
+                        , "KEY_SIZE"])
         if(feature_algorithm == "SIFT" or feature_algorithm == "SURF"):
             index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = TREES)
         else:
@@ -271,6 +294,13 @@ def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
 # query image 
 # trainIdx is the corresponding matching point from the training index 
 # descriptors
+def ratioTest(matches):
+    good_matches = []
+    for m,n in matches:
+        if m.distance < 0.7*n.distance:
+            good_matches.append([m])
+    return good_matches
+    
 def getMatchingKeypoints(match,src_key,dest_key):
     matching_keypoints = []
     for m in match:
@@ -296,19 +326,13 @@ def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
 
 def featureDetection():
     FD_METHOD = "SURF"
-    FM_METHOD = "FLANN"
-    src_image = checkbox
+    FM_METHOD = "BRUTE_FORCE"
+    src_image = tab
     dest_image = preProcess(sample)
+    print "=== Feature Extraction ==="
+    print "Feature extraction method: ", FD_METHOD
     print "=== Featue Matching ==="
-    print "Feature matching methos: ",FM_METHOD
-    print "=== FLANN PARAMETERS ==="
-    print "FLANN_INDEX_KDTREE: ",FLANN_INDEX_KDTREE
-    print "FLANN_INDEX_LSH : ",FLANN_INDEX_LSH 
-    print "TABLE_NUMBER : ",TABLE_NUMBER 
-    print "KEY_SIZE : ",KEY_SIZE 
-    print "MULTI_PROBE_LEVEL : ",MULTI_PROBE_LEVEL 
-    print "TREES : ",TREES 
-    print "CHECKS : ",CHECKS 
+    print "Feature matching method: ",FM_METHOD
     src_key, src_desc = computeDescriptors(src_image,FD_METHOD)
     dest_key, dest_desc = computeDescriptors(dest_image,FD_METHOD)
     print "===== Feature Descriptors ===="
@@ -321,7 +345,8 @@ def featureDetection():
     src_indices = []
     dest_indices = []
     print "===== Matching Features ====="
-    for g in match:        
+    best_matches = ratioTest(match)
+    for g in best_matches:        
         src_indices.append(src_key[g[0].queryIdx])
         dest_indices.append(dest_key[g[0].trainIdx])
         print "Training Desc Index:", g[0].trainIdx, ", Query Desc Index: ", g[0].queryIdx
@@ -329,8 +354,9 @@ def featureDetection():
 
     kps = getKnnMatchingKeypoints(match,src_key,dest_key)
     showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
-#    plot.subplot(2,1,1), plot.imshow(input_box)
-#    plot.subplot(2,1,2), plot.imshow(sample)
+#    plot.subplot(2,1,1), plot.imshow(src_image)
+#    plot.subplot(2,1,2)
+#    plot.imshow(dest_image)
 #    plot.show()
  #   src_pts = np.float32([src_key[m.queryIdx].pt 
  #                         for m,n in match]).reshape(-1,1,2)
