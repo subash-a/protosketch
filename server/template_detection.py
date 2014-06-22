@@ -322,12 +322,21 @@ def showMatchingPoints(src_image,src_matches,dest_image,dest_matches):
     plot.imshow(dest_kp_image)
     plot.show()
 
+def buildComponentCoordinates(component, keypoints):
+    points = []
+    for p in keypoints:
+        points.append(p.pt)
+    print points
+    points_array = np.vstack(points)
+    print points_array[0]
+
 
 
 def featureDetection():
     FD_METHOD = "SURF"
     FM_METHOD = "BRUTE_FORCE"
-    src_image = tab
+    src_image = button
+    component_name = "button"
     dest_image = preProcess(sample)
     print "=== Feature Extraction ==="
     print "Feature extraction method: ", FD_METHOD
@@ -353,7 +362,9 @@ def featureDetection():
         print "Distance: ",g[0].distance
 
     kps = getKnnMatchingKeypoints(match,src_key,dest_key)
-    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
+#    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
+    print "============= Component Coordinates ==============================="
+    buildComponentCoordinates(component_name,dest_indices)
 #    plot.subplot(2,1,1), plot.imshow(src_image)
 #    plot.subplot(2,1,2)
 #    plot.imshow(dest_image)
