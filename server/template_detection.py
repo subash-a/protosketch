@@ -108,7 +108,7 @@ radio = readImage("assets/components/radio.png", GRAY)
 button = readImage("assets/components/button.png", GRAY)
 tab = readImage("assets/components/tab.png", GRAY)
 slider = readImage("assets/components/slider.png", GRAY)
-sample = readImage("assets/test_images/sketch_3.jpg",GRAY)
+sample = readImage("assets/test_images/buttons.png",GRAY)
 #================= Template matching technique =================================
 def extractComponentFromImage(image, component, document):
     result = matchMultipleImage(image, eval(component))
@@ -179,12 +179,12 @@ def scaleImage(image):
     return scaled_image
 
 def preProcess(image):
-    output = scaleImage(image)
+#    output = scaleImage(image)
 #    output = thresholdImage(output,False)
 #    output = dilateImage(output);
 #    output = erodeImage(output)
 #    output = removeImageNoise(output)
-    output = smoothImage(output)
+    output = smoothImage(image)
     return output
 
 #Display all the parameters of the given feature extraction method
@@ -243,7 +243,14 @@ def detectFeatures(image, method):
     return (keyPoints,algorithm)
 
 # Displays the key points of a image given the keypoints #
-def showKeyPoints(image,keypoints,flag):
+def writeKeypoints(keypoints,filename):
+    f = open(filename,'w')
+    f.write("x,y,size,angle,response,octave,class_id\n")
+    for k in keypoints:
+        f.write(str(k.pt[0])+","+str(k.pt[1])+","+str(k.size)+","+str(k.angle)+","+str(k.response)+","+str(k.octave)+","+str(k.class_id)+"\n")
+    f.close()
+
+def showKeyPoints(image,keypoints):
     kp_image = ocv.drawKeypoints(image,keypoints,color=(0,255,255))
     plot.imshow(kp_image)
     plot.show()
@@ -297,7 +304,7 @@ def matchFeatures(desc1,desc2,matching_algorithm,isknnmatch,feature_algorithm):
 def ratioTest(matches):
     good_matches = []
     for m,n in matches:
-        if m.distance < 0.7*n.distance:
+        if m.distance < 0.75*n.distance:
             good_matches.append([m])
     return good_matches
     
@@ -328,8 +335,39 @@ def buildComponentCoordinates(component, keypoints):
         points.append(p.pt)
     print points
     points_array = np.vstack(points)
-    print points_array[0]
+    np.mean(points_array,0)
 
+def getKeypointIndexes(matches,src_keypoints,dest_keypoints):
+    src_indices = []
+    dest_indices = []
+    
+    for g in matches:        
+        src_indices.append(src_key[g.queryIdx])
+        dest_indices.append(dest_key[g.trainIdx])
+        print "Training Desc Index:", g.trainIdx, ", Query Desc Index: ", g.queryIdx
+        print "Distance: ",g.distance
+    return src_indices, dest_indices
+    
+def getKnnKeypointIndexes(matches,src_keypoints,dest_keypoints):
+    src_indices = []
+    dest_indices = []
+    
+    for g in matches:        
+        src_indices.append(src_keypoints[g[0].queryIdx])
+        dest_indices.append(dest_keypoints[g[0].trainIdx])
+        print "Training Desc Index:", g[0].trainIdx, ", Query Desc Index: ", g[0].queryIdx
+        print "Distance: ",g[0].distance
+    return src_indices, dest_indices
+
+def matchMultipleObjects(dest_indices,dest_key):
+    m_responses = []
+    u_responses = []
+    for j in dest_indices:
+        m_responses.append(j.response)
+    for k in dest_key:
+        u_responses.append(k.response)
+    unique_m_responses = np.unique(np.sort(m_responses))
+    return np.where(u_responses == unique_m_responses[0]) 
 
 
 def featureDetection():
@@ -349,22 +387,21 @@ def featureDetection():
     print "Destination Keypoints: ",len(dest_key)
     print "Source Descriptors: ",len(src_desc)
     print "Destination Descriptors: ",len(dest_desc)
+    
+#    showKeyPoints(src_image,src_key)
+#    writeKeypoints(src_key,"output/source_keypoints.csv")
+#    writeKeypoints(dest_key,"output/destination_keypoints.csv")
     match = matchFeatures(src_desc,dest_desc,FM_METHOD,True,FD_METHOD)
     print "Number of Matches: ",len(match)
-    src_indices = []
-    dest_indices = []
     print "===== Matching Features ====="
-    best_matches = ratioTest(match)
-    for g in best_matches:        
-        src_indices.append(src_key[g[0].queryIdx])
-        dest_indices.append(dest_key[g[0].trainIdx])
-        print "Training Desc Index:", g[0].trainIdx, ", Query Desc Index: ", g[0].queryIdx
-        print "Distance: ",g[0].distance
-
+    src_indices, dest_indices = getKnnKeypointIndexes(match,src_key,dest_key)
     kps = getKnnMatchingKeypoints(match,src_key,dest_key)
+#    writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
+#    writeKeypoints(dest_indices,"output/matching_dest_keypoints.csv")
 #    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
-    print "============= Component Coordinates ==============================="
-    buildComponentCoordinates(component_name,dest_indices)
+    print matchMultipleObjects(dest_indices,dest_key)
+#    print "============= Component Coordinates ==============================="
+#    buildComponentCoordinates(component_name,dest_indices)
 #    plot.subplot(2,1,1), plot.imshow(src_image)
 #    plot.subplot(2,1,2)
 #    plot.imshow(dest_image)
