@@ -362,18 +362,23 @@ def getKnnKeypointIndexes(matches,src_keypoints,dest_keypoints):
 def matchMultipleObjects(dest_indices,dest_key):
     m_responses = []
     u_responses = []
+    all_matches = []
     for j in dest_indices:
         m_responses.append(j.response)
     for k in dest_key:
         u_responses.append(k.response)
     unique_m_responses = np.unique(np.sort(m_responses))
-    return np.where(u_responses == unique_m_responses[0]) 
+    for m in unique_m_responses:
+        index  = np.where(u_responses == m)
+        for i in index[0]:
+            all_matches.append(dest_key[i])
+    return all_matches
 
 
 def featureDetection():
     FD_METHOD = "SURF"
     FM_METHOD = "BRUTE_FORCE"
-    src_image = button
+    src_image = radio
     component_name = "button"
     dest_image = preProcess(sample)
     print "=== Feature Extraction ==="
@@ -396,10 +401,11 @@ def featureDetection():
     print "===== Matching Features ====="
     src_indices, dest_indices = getKnnKeypointIndexes(match,src_key,dest_key)
     kps = getKnnMatchingKeypoints(match,src_key,dest_key)
+    mul_dest_indices = matchMultipleObjects(dest_indices,dest_key)
 #    writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
 #    writeKeypoints(dest_indices,"output/matching_dest_keypoints.csv")
-#    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
-    print matchMultipleObjects(dest_indices,dest_key)
+    showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
+
 #    print "============= Component Coordinates ==============================="
 #    buildComponentCoordinates(component_name,dest_indices)
 #    plot.subplot(2,1,1), plot.imshow(src_image)
