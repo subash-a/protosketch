@@ -340,7 +340,6 @@ def buildComponentCoordinates(component, keypoints):
 def getKeypointIndexes(matches,src_keypoints,dest_keypoints):
     src_indices = []
     dest_indices = []
-    
     for g in matches:        
         src_indices.append(src_key[g.queryIdx])
         dest_indices.append(dest_key[g.trainIdx])
@@ -351,7 +350,6 @@ def getKeypointIndexes(matches,src_keypoints,dest_keypoints):
 def getKnnKeypointIndexes(matches,src_keypoints,dest_keypoints):
     src_indices = []
     dest_indices = []
-    
     for g in matches:        
         src_indices.append(src_keypoints[g[0].queryIdx])
         dest_indices.append(dest_keypoints[g[0].trainIdx])
@@ -374,25 +372,78 @@ def matchMultipleObjects(dest_indices,dest_key):
             all_matches.append(dest_key[i])
     return all_matches
 
+def getKeypointCoordinates(keypoints):
+    x_array = []
+    y_array = []
+    for k in keypoints:
+        x_array.append(k.pt[0])
+        y_array.append(k.pt[1])
+    return x_array, y_array
+
+def getXYVariances(keypoints):
+    x_array,y_array = getKeypointCoordinates(keypoints)
+    x_diff = []
+    y_diff = []
+    x_array = np.sort(x_array)
+    y_array = np.sort(y_array)
+    print x_array
+    print y_array
+    for i in xrange(1,len(x_array)):
+        x_diff.append(x_array[i] - x_array[i-1])
+        y_diff.append(y_array[i] - y_array[i-1])
+    print "x-max: ",np.nanmax(x_diff)
+    print "y-max: ",np.nanmax(y_diff)
+    print "x-min: ",np.nanmin(x_diff)
+    print "y-min: ",np.nanmin(y_diff)
+
+def getMaxMin(numarray):
+    return np.nanmax(numarray),np.nanmin(numarray)
+
+def getWidthHeight(x1,x2,y1,y2):
+    return x2-x1,y2-y1
+
+def getWHRatio(width,height):
+    return width/height
+
+def enumerateObjects(src_keys,matching_keys):
+    s_numfeatures = len(src_keys)
+    m_numfeatures = len(matching_keys)
+    s_xarray, s_yarray = getKeypointCoordinates(src_keys)
+    m_xarray, m_yarray = getKeypointCoordinates(matching_keys)
+    s_maxX,s_minX = getMaxMin(s_xarray)
+    s_maxY,s_minY = getMaxMin(s_yarray)
+    m_maxX,m_minX = getMaxMin(m_xarray)
+    m_maxY,m_minY = getMaxMin(m_yarray)
+    s_width,s_height = getWidthHeight(s_minX,s_maxX,s_minY,s_maxY)
+    m_width,m_height = getWidthHeight(m_minX,m_maxX,m_minY,m_maxY)
+    s_ratio = getWHRatio(s_width,s_height)
+    m_ratio = getWHRatio(m_width,m_height)
+    height_ratio = m_height/s_height
+    width_ratio = m_width/s_width
+    if m_ratio > s_ratio:
+        object_arrangement = "Horizontal"
+    else:
+        object_arrangement = "Vertical"
+
+    approx_objects = m_ratio/s_ratio
 
 def featureDetection():
     FD_METHOD = "SURF"
     FM_METHOD = "BRUTE_FORCE"
-    src_image = radio
+    src_image = button
     component_name = "button"
     dest_image = preProcess(sample)
     print "=== Feature Extraction ==="
     print "Feature extraction method: ", FD_METHOD
     print "=== Featue Matching ==="
-    print "Feature matching method: ",FM_METHOD
-    src_key, src_desc = computeDescriptors(src_image,FD_METHOD)
-    dest_key, dest_desc = computeDescriptors(dest_image,FD_METHOD)
+    print "Feature matching method: ", FM_METHOD
+    src_key, src_desc = computeDescriptors(src_image, FD_METHOD)
+    dest_key, dest_desc = computeDescriptors(dest_image, FD_METHOD)
     print "===== Feature Descriptors ===="
-    print "Source Keypoints: ",len(src_key)
-    print "Destination Keypoints: ",len(dest_key)
-    print "Source Descriptors: ",len(src_desc)
-    print "Destination Descriptors: ",len(dest_desc)
-    
+    print "Source Keypoints: ", len(src_key)
+    print "Destination Keypoints: ", len(dest_key)
+    print "Source Descriptors: ", len(src_desc)
+    print "Destination Descriptors: ", len(dest_desc)
 #    showKeyPoints(src_image,src_key)
 #    writeKeypoints(src_key,"output/source_keypoints.csv")
 #    writeKeypoints(dest_key,"output/destination_keypoints.csv")
@@ -403,19 +454,20 @@ def featureDetection():
     kps = getKnnMatchingKeypoints(match,src_key,dest_key)
     mul_dest_indices = matchMultipleObjects(dest_indices,dest_key)
 #    writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
-#    writeKeypoints(dest_indices,"output/matching_dest_keypoints.csv")
-    showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
-
+    writeKeypoints(mul_dest_indices,"output/multi_matching_dest_keypoints.csv")
+#    getXYVariances(mul_dest_indices)
+    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
+    
 #    print "============= Component Coordinates ==============================="
 #    buildComponentCoordinates(component_name,dest_indices)
 #    plot.subplot(2,1,1), plot.imshow(src_image)
 #    plot.subplot(2,1,2)
 #    plot.imshow(dest_image)
 #    plot.show()
- #   src_pts = np.float32([src_key[m.queryIdx].pt 
- #                         for m,n in match]).reshape(-1,1,2)
- #   dest_pts = np.float32([dest_key[m.trainIdx].pt 
- #                          for m,n in match]).reshape(-1,1,2)
+#    src_pts = np.float32([src_key[m.queryIdx].pt 
+#                          for m,n in match]).reshape(-1,1,2)
+#    dest_pts = np.float32([dest_key[m.trainIdx].pt 
+#                           for m,n in match]).reshape(-1,1,2)
 #
 #    print src_pts
 #    print dest_pts
