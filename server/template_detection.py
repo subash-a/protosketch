@@ -3,6 +3,7 @@ import cv2 as ocv
 import scipy as sp
 import numpy as np
 from matplotlib import pyplot as plot
+import math as math
 #========= Importing XML libraries =============================================
 import xml.etree.ElementTree as XML
 #======== Importing Custom Libraries ===========================================
@@ -406,31 +407,104 @@ def getWHRatio(width,height):
     return width/height
 
 def enumerateObjects(src_keys,matching_keys):
+    # gives the number of features under the source and matched set
     s_numfeatures = len(src_keys)
     m_numfeatures = len(matching_keys)
+    # gives the arrays of x coordinates and y coordinates for source and match
     s_xarray, s_yarray = getKeypointCoordinates(src_keys)
     m_xarray, m_yarray = getKeypointCoordinates(matching_keys)
+    # gives the max and min X and Y values from the x and y arrays
     s_maxX,s_minX = getMaxMin(s_xarray)
     s_maxY,s_minY = getMaxMin(s_yarray)
     m_maxX,m_minX = getMaxMin(m_xarray)
     m_maxY,m_minY = getMaxMin(m_yarray)
+    # gives the width and height of the source and matched feature set
     s_width,s_height = getWidthHeight(s_minX,s_maxX,s_minY,s_maxY)
     m_width,m_height = getWidthHeight(m_minX,m_maxX,m_minY,m_maxY)
+    # gives the ratio of the width/height useful in getting proportion and scale
     s_ratio = getWHRatio(s_width,s_height)
     m_ratio = getWHRatio(m_width,m_height)
+    
+    # gives the ratio of heights and widths to decide scale 
     height_ratio = m_height/s_height
     width_ratio = m_width/s_width
+    # gives the arrangement of the objects in the image
     if m_ratio > s_ratio:
         object_arrangement = "Horizontal"
     else:
         object_arrangement = "Vertical"
+    # gives the approximate object width and height
+    object_width = s_ratio*m_height
+    object_height = m_height
 
+    # gives the approximate number of objects
     approx_objects = m_ratio/s_ratio
+    object_num = int(approx_objects)
+    for x in xrange(0,object_num):
+        print "Top and Left of Object: ",m_minY,m_minX+(x*object_width)
+def buildXYResponseArray(keys):
+    result = []
+    for k in keys:
+        result.append(np.array((k.pt[0],k.pt[1],k.response)))
+    return np.array(result)
 
+def getResponseArray(keys):
+    result = []
+    for k in keys:
+        result.append(k.response)
+    return np.array(result)
+    
+def reducePoints(mul_match_keys,src_keys):
+    # extracts the x and y coordinate arrays from keypoints
+    x_array,y_array = getKeypointCoordinates(mul_match_keys)
+    # extracts the response values as an array from keypoints
+    res_array = getResponseArray(mul_match_keys)
+    # builds an array of form [x,y,response]
+    dataset = buildXYResponseArray(mul_match_keys)
+    # returns the indices of a sorted x-coords array
+    sortedx = np.argsort(x_array)
+    count_array = []
+    matches_array = []
+    # checks where the response value is same and then groups them into a bin
+    # also tracks their count to measure how many objects have been detected
+    for s in sortedx:
+        matches = np.where(res_array == res_array[s])
+        matches_array.append(matches[0])
+        count_array.append(len(matches[0]))
+    print np.bincount(count_array)
+    print np.argmax(np.bincount(count_array))
+    print len(mul_match_keys)/len(src_keys)
+    # Number of objects as per the matches of features
+    objects = np.argmax(np.bincount(count_array))
+    i = 0
+    # get to the match which has least x value but has same number of matches 
+    # as the object
+    while len(matches_array[i]) != objects:
+        i = i+1
+    # store the indices of the matches with same response value
+    point_indices = matches_array[i]
+    final_points = []
+    final_points_y = []
+    #return the set of points that form the center of the objects and the ycoord
+    for c in point_indices:
+        final_points.append(dataset[c])
+        final_points_y.append(y_array[c])
+    # find the minimun of y axis     
+    minY = np.min(y_array)
+    #subtract the elements of points from the minimun y axis
+    measure = np.subtract(final_points_y,[minY])
+    # get the least difference from the remaining list, this tells us which 
+    # point is closest to the top, sp we assign the to left to that and then 
+    # subtract the corresponding values from other point y axis as well
+    least = np.amin(measure)
+    
+    final_measure = np.subtract(final_points,[0,least,0])
+    print final_measure
+    
 def featureDetection():
     FD_METHOD = "SURF"
-    FM_METHOD = "BRUTE_FORCE"
-    src_image = button
+    FM_METHOD = "FLANN"
+    src_image = radio
     component_name = "button"
     dest_image = preProcess(sample)
     print "=== Feature Extraction ==="
@@ -453,11 +527,12 @@ def featureDetection():
     src_indices, dest_indices = getKnnKeypointIndexes(match,src_key,dest_key)
     kps = getKnnMatchingKeypoints(match,src_key,dest_key)
     mul_dest_indices = matchMultipleObjects(dest_indices,dest_key)
-#    writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
+    writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
     writeKeypoints(mul_dest_indices,"output/multi_matching_dest_keypoints.csv")
 #    getXYVariances(mul_dest_indices)
-    showMatchingPoints(src_image,src_indices,dest_image,dest_indices)
-    
+    showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
+#    enumerateObjects(src_key,mul_dest_indices)
+    reducePoints(mul_dest_indices,src_key)
 #    print "============= Component Coordinates ==============================="
 #    buildComponentCoordinates(component_name,dest_indices)
 #    plot.subplot(2,1,1), plot.imshow(src_image)
