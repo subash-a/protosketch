@@ -23,6 +23,7 @@ SCALE_AREA = ocv.INTER_AREA
 MATCHING_THRESHOLD = 0.95
 ERODE_KERNEL_SIZE = (3,3)
 DILATE_KERNEL_SIZE = (2,2)
+FEATURES_THRESHOLD = 10
 #======= THRESHOLDING PARAMETERS ===============================================
 IMAGE_THRESHOLD = 187 # Image thresholding parameter for Adaptive Thresholding
 IMAGE_THRESHOLD_MAXVAL = 255 #In Image thresholding value to be given for > thr
@@ -109,7 +110,7 @@ radio = readImage("assets/components/radio.png", GRAY)
 button = readImage("assets/components/button.png", GRAY)
 tab = readImage("assets/components/tab.png", GRAY)
 slider = readImage("assets/components/slider.png", GRAY)
-sample = readImage("assets/test_images/buttons.png",GRAY)
+sample = readImage("assets/test_images/sketch_10.jpg",GRAY)
 #================= Template matching technique =================================
 def extractComponentFromImage(image, component, document):
     result = matchMultipleImage(image, eval(component))
@@ -180,12 +181,12 @@ def scaleImage(image):
     return scaled_image
 
 def preProcess(image):
-#    output = scaleImage(image)
+    output = scaleImage(image)
 #    output = thresholdImage(output,False)
 #    output = dilateImage(output);
 #    output = erodeImage(output)
 #    output = removeImageNoise(output)
-    output = smoothImage(image)
+    output = smoothImage(output)
     return output
 
 #Display all the parameters of the given feature extraction method
@@ -499,14 +500,14 @@ def reducePoints(mul_match_keys,src_keys):
     least = np.amin(measure)
     
     final_measure = np.subtract(final_points,[0,least,0])
-    print final_measure
+    return final_measure
     
-def featureDetection():
+def featureDetection(source,query):
     FD_METHOD = "SURF"
-    FM_METHOD = "FLANN"
-    src_image = radio
+    FM_METHOD = "BRUTE_FORCE"
+    src_image = source
     component_name = "button"
-    dest_image = preProcess(sample)
+    dest_image = preProcess(query)
     print "=== Feature Extraction ==="
     print "Feature extraction method: ", FD_METHOD
     print "=== Featue Matching ==="
@@ -524,46 +525,39 @@ def featureDetection():
     match = matchFeatures(src_desc,dest_desc,FM_METHOD,True,FD_METHOD)
     print "Number of Matches: ",len(match)
     print "===== Matching Features ====="
-    src_indices, dest_indices = getKnnKeypointIndexes(match,src_key,dest_key)
-    kps = getKnnMatchingKeypoints(match,src_key,dest_key)
-    mul_dest_indices = matchMultipleObjects(dest_indices,dest_key)
-    writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
-    writeKeypoints(mul_dest_indices,"output/multi_matching_dest_keypoints.csv")
-#    getXYVariances(mul_dest_indices)
-    showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
-#    enumerateObjects(src_key,mul_dest_indices)
-    reducePoints(mul_dest_indices,src_key)
-#    print "============= Component Coordinates ==============================="
-#    buildComponentCoordinates(component_name,dest_indices)
-#    plot.subplot(2,1,1), plot.imshow(src_image)
-#    plot.subplot(2,1,2)
-#    plot.imshow(dest_image)
-#    plot.show()
-#    src_pts = np.float32([src_key[m.queryIdx].pt 
-#                          for m,n in match]).reshape(-1,1,2)
-#    dest_pts = np.float32([dest_key[m.trainIdx].pt 
-#                           for m,n in match]).reshape(-1,1,2)
-#
-#    print src_pts
-#    print dest_pts
-#
-#    M,mask = ocv.findHomography(src_pts, dest_pts, ocv.RANSAC, 5.0)
-#    print M
-#    good = []
-#    for m,n in matches:
-#        good.append(m)
-#
-#    matchesMask = mask.ravel().tolist()
-#    draw_params = dict(matchColor = (0,255,0), 
-#                       singlePointColor = None, 
-#                       matchesMask = matchesMask, 
-#                       flags = 2)
-#    img3 = ocv.drawMatches(img,src_key,input_box,dest_key,good,None,**draw_params)
-#    plot.imshow(img3,'gray')
-#    plot.show()
-#==================== Main function calls ======================================
+    if(len(match) > FEATURES_THRESHOLD):
+        src_indices, dest_indices = getKnnKeypointIndexes(match,src_key,dest_key)
+        kps = getKnnMatchingKeypoints(match,src_key,dest_key)
+        mul_dest_indices = matchMultipleObjects(dest_indices,dest_key)
+        writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
+        writeKeypoints(mul_dest_indices,"output/multi_matching_dest_keypoints.csv")
+        showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
+    #    enumerateObjects(src_key,mul_dest_indices)
+        attribs = reducePoints(mul_dest_indices,src_key)
+        print attribs
+        return attribs
+    else:
+        return []
 #templateMatching()
-featureDetection()
+
+def extractComponentFromImage2(source,query, component, document):
+    coords_array = featureDetection(source,query)
+    for c in coords_array:
+        pbuild.addComponent(document, component, c, None, None)
+    return document
+elements = ["tab","dropdown","button","radio","checkbox","slider"]
+test_elements  = ["tab"]
+jsfiles = ["utils/js/jquery-1.7.1.js","utils/js/bootstrap.js"]
+cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
+document = pbuild.createDocument()
+for e in elements:
+    document = extractComponentFromImage2(eval(e),sample, e, document)
+    html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
+
+ET = XML.ElementTree(html)
+ET.write("output/index.html")
+
+
 
 
 

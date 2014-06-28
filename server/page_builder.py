@@ -15,7 +15,7 @@ def buildStyleTags(css_list):
         link = XML.Element("link")
         link.set("rel", "stylesheet")
         link.set("type", "text/css")
-        link.set("src", x)
+        link.set("href", x)
         tags.append(link)
     return tags
 
@@ -45,7 +45,18 @@ def getDropDownStructure():
     return div
 
 def getTabStructure():
-    return None
+    div = XML.Element("div",{"class":"tabb"})
+    ul = XML.SubElement(div,"ul",{"class":"nv nav-tabs"})
+    li = XML.SubElement(ul,"li",{"class":"active"})
+    li_1 = XML.SubElement(ul,"li",{"class":""})
+    li_2 = XML.SubElement(ul,"li",{"class":""})
+    a = XML.SubElement(li,"a",{"href":"#"})
+    a.text = "Tab1"
+    a_1 = XML.SubElement(li_1,"a",{"href":"#"})
+    a_1.text = "Tab2"
+    a_2 = XML.SubElement(li_2,"a",{"href":"#"})
+    a_2.text = "Tab3"
+    return div
 
 def getSliderStructure():
     return None
@@ -55,16 +66,16 @@ def getComponent(parent, component):
         v = XML.SubElement(parent,"input")
         v.set("type","text")
         return v
-    elif(component == "radio_button"):
+    elif(component == "radio"):
         v = XML.SubElement(parent,"input")
         v.set("type","radio")
         return v
-    elif(component == "dropdown"):
+    elif(component == "button"):
         v = XML.SubElement(parent,"button")
         v.set("type","button")
         v.text = "Click"
         return v
-    elif(component == "check_box"):
+    elif(component == "checkbox"):
         v = XML.SubElement(parent,"input")
         v.set("type","checkbox")
         return v
@@ -75,10 +86,9 @@ def getComponent(parent, component):
         return v
     elif(component == "tab"):
         v = XML.SubElement(parent,"div")
-        v.set("class","tab")
-        v.text = " "
+        v.append(getTabStructure())
         return v
-    elif(component == "button"):
+    elif(component == "dropdown"):
         v = XML.SubElement(parent,"div")
         v.append(getDropDownStructure())
         return v
@@ -86,7 +96,7 @@ def getComponent(parent, component):
         v = XML.SubElement(parent,"div")
         v.set("class","none")
         v.text = " "
-        return vi
+        return v
 
 def addComponent(parent, component, coords, width, height):
     xml_comp = getComponent(parent,component)
@@ -110,7 +120,7 @@ def createHTMLPage(xml_template,js_list,css_list):
     body = XML.SubElement(html,"body")
     css_list = buildStyleTags(css_list)
     for c in css_list:
-        head.append(c)
+        body.append(c)
     body.append(xml_template)
     js_list = buildScriptTags(js_list)
     for j in js_list:
