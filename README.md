@@ -10,5 +10,6 @@ In order to run the code found on this repository you will need to have OpenCV i
 3. Go to the folder containing the unzipped OpenCV folder and run the install_opencv.sh script
 4. After installation is complete you are ready to use the OpenCV Python and C libraries on Ubuntu
 
+**Note: You need root privileges to run the above mentioned script.**
 
 
