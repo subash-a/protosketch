@@ -4,3 +4,4 @@ OpenCV 2.4.8 or higher
 Matplotlib
 Numpy
 Scipy
+Flask (micro web framework)
