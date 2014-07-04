@@ -1,0 +1,6 @@
+This Project requires the following python packages
+
+OpenCV 2.4.8 or higher
+Matplotlib
+Numpy
+Scipy
