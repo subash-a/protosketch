@@ -7,7 +7,7 @@ sudo apt-get install build-essential cmake pkg-config checkinstall
 
 #installing python dev libraries and numpy library
 echo "Installing python dev and  numpy dev libraries"
-sudo apt-get install python-dev python-numpy
+sudo apt-get install python-dev python-numpy python-scipy python-matplotlib
 
 #installing GTK2.0+ and QT4+
 echo "Installing GTK2.0, QT4, TBB and other libraries"
