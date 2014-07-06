@@ -7,7 +7,7 @@ var uploadFile = function (e) {
 	var form = new FormData();
 	xhr.open("POST","upload");
 	form.append("files",filedata);
-	xhr.send(filedata);
+	xhr.send(form);
     };
     freader.onload = sendFile;
     freader.readAsBinaryString(file);
