@@ -1,35 +1,14 @@
 <html>
   <head>
-    <link rel="stylesheet" type="text/css" href="static/css/bootstrap.css"/>
+    <link rel="stylesheet" href="static/css/bootstrap.css"/>
   </head>
   <body>
     <form enctype="multipart/form-data">
       <input type="file" id="file-input"/>
     </form>
     <div id="progess-meter">Progress:<span id="progress-value"></span></div>
-    <script type="text/javascript" src="static/js/jquery-1.7.1.js"></script>
-    <script type="text/javascript" src="static/js/bootstrap.js"></script>
-    <script type="text/javascript">
-      var freader = new FileReader();
-      var file_input = document.getElementById("file-input");
-      var xhr = new XMLHttpRequest();
-      var fileHandler = function(e) {
-      var file = this.files[0];
-      freader.readAsBinaryString(file);
-      };
-      var updateProgress = function(e) {
-      var pmeter = document.getElementById("progress-value");
-      pmeter.innerHTML = e.loaded;
-      };
-      file_input.addEventListener("change",fileHandler,false);
-      xhr.upload.addEventListener("progress", updateProgress, false);
-      xhr.open("POST","upload");
-      freader.onload = function(e) {
-      var file = e.target.result;
-      var fdata = new FormData();
-      fdata.append("file",file);
-      xhr.send(fdata);
-      };
-    </script>
+    <script src="static/js/jquery-1.7.1.js"></script>
+    <script src="static/js/bootstrap.js"></script>
+    <script src="static/js/upload.js"></script>
   </body>
 </html>

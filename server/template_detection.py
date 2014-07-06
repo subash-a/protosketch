@@ -102,15 +102,17 @@ def matchMultipleImage(image, template):
         tup = (pt, width, height)
         locations.append(tup)
     return locations
-    
 #====== Reading template elements ==============================================
-checkbox = readImage("assets/components/checkbox.png", GRAY)
-dropdown = readImage("assets/components/dropdown.png", GRAY)
-radio = readImage("assets/components/radio.png", GRAY)
-button = readImage("assets/components/button.png", GRAY)
-tab = readImage("assets/components/tab.png", GRAY)
-slider = readImage("assets/components/slider.png", GRAY)
-sample = readImage("assets/test_images/sketch_10.jpg",GRAY)
+
+def loadTemplates():
+    checkbox = readImage("assets/components/checkbox.png", GRAY)
+    dropdown = readImage("assets/components/dropdown.png", GRAY)
+    radio = readImage("assets/components/radio.png", GRAY)
+    button = readImage("assets/components/button.png", GRAY)
+    tab = readImage("assets/components/tab.png", GRAY)
+    slider = readImage("assets/components/slider.png", GRAY)
+    sample = readImage("assets/test_images/sketch_10.jpg",GRAY)
+    return checkbox,dropdown,radio,button,tab,slider,sample
 #================= Template matching technique =================================
 def extractComponentFromImage(image, component, document):
     result = matchMultipleImage(image, eval(component))
@@ -545,19 +547,23 @@ def extractComponentFromImage2(source,query, component, document):
     for c in coords_array:
         pbuild.addComponent(document, component, c, None, None)
     return document
-elements = ["tab","dropdown","button","radio","checkbox","slider"]
-test_elements  = ["tab"]
-jsfiles = ["utils/js/jquery-1.7.1.js","utils/js/bootstrap.js"]
-cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
-document = pbuild.createDocument()
-for e in elements:
-    document = extractComponentFromImage2(eval(e),sample, e, document)
-    html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
 
-ET = XML.ElementTree(html)
-ET.write("output/index.html")
+def buildPrototype(image):
+    checkbox,dropdown,radio,button,tab,slider,sample = loadTemplates()
+    elements = ["tab","dropdown","button","radio","checkbox","slider"]
+    test_elements  = ["tab"]
+    jsfiles = ["utils/js/jquery-1.7.1.js","utils/js/bootstrap.js"]
+    cssfiles = ["utils/css/bootstrap.css","utils/css/prototype.css"]
+    document = pbuild.createDocument()
+    for e in elements:
+        document = extractComponentFromImage2(eval(e),image, e, document)
+        html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
+        
+    ET = XML.ElementTree(html)
+    ET.write("output/index.html")
 
-
+def __main__(imagefile):
+    buildPrototype(readImage("upload/"+imagefile,GRAY))
 
 
 

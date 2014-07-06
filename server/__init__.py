@@ -1,4 +1,5 @@
 from flask import Flask, url_for, render_template, request
+import template_detection as te
 app = Flask(__name__)
 
 @app.route('/')
@@ -13,12 +14,13 @@ def intdex_load():
 def handle_upload():
     if request.method == 'POST':
         print "POST Method"
-        if request.files["name"]:
-            print "file received"
-        else:
-            return "Did not get uploaded"
+        print request.form
+        return "file received"
+#       te.__main__(None)
+    else:
+        return "Did not get uploaded"
 
 if  __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(host='0.0.0.0')
     
