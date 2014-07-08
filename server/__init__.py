@@ -1,8 +1,11 @@
 import os
-from flask import Flask, url_for, render_template, request
+from flask import Flask, url_for, render_template, request, redirect
+from flask.ext.login import LoginManager
 import template_detection as te
+
 upload_path = "uploads/"
 app = Flask(__name__)
+loginManager = LoginManager()
 
 def getExtension(filename):
     name_array = filename.split(".")
@@ -23,12 +26,14 @@ def handle_upload():
         file = request.files['file']
         filepath  = upload_path+"queryimage."+getExtension(file.filename)
         file.save(filepath)
-        te.__main__(filepath)
-        return "file received"
+        print filepath
+        return redirect(te.__main__(filepath),code=302)
+        #return "file received"
     else:
         return "Did not get uploaded"
 
 if  __name__ == '__main__':
     app.debug = True
     app.run(host='0.0.0.0')
+    loginManager.init_app(app)
     

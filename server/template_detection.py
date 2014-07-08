@@ -8,7 +8,7 @@ import math as math
 import xml.etree.ElementTree as XML
 #======== Importing Custom Libraries ===========================================
 import page_builder as pbuild
-
+import pathgenerator as pgen
 #============ OPENCV CONSTANTS =================================================
 GRAY = ocv.IMREAD_GRAYSCALE # read image as gray scale image #
 ASIS = ocv.IMREAD_UNCHANGED # read image as is ,also include alpha channels #
@@ -533,8 +533,8 @@ def featureDetection(source,query):
         mul_dest_indices = matchMultipleObjects(dest_indices,dest_key)
         writeKeypoints(src_indices,"output/matching_src_keypoints.csv")
         writeKeypoints(mul_dest_indices,"output/multi_matching_dest_keypoints.csv")
-        showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
-    #    enumerateObjects(src_key,mul_dest_indices)
+#        showMatchingPoints(src_image,src_indices,dest_image,mul_dest_indices)
+#        enumerateObjects(src_key,mul_dest_indices)
         attribs = reducePoints(mul_dest_indices,src_key)
         print attribs
         return attribs
@@ -549,6 +549,7 @@ def extractComponentFromImage2(source,query, component, document):
     return document
 
 def buildPrototype(image):
+    output_path = "prototype/"+pgen.getNewPrototypeId()+".html"
     checkbox,dropdown,radio,button,tab,slider,sample = loadTemplates()
     elements = ["tab","dropdown","button","radio","checkbox","slider"]
     test_elements  = ["tab"]
@@ -558,12 +559,12 @@ def buildPrototype(image):
     for e in elements:
         document = extractComponentFromImage2(eval(e),image, e, document)
         html = pbuild.createHTMLPage(document,jsfiles,cssfiles)
-        
     ET = XML.ElementTree(html)
-    ET.write("output/index.html")
+    ET.write(output_path)
+    return output_path
 
 def __main__(imagefile):
-    buildPrototype(readImage("upload/"+imagefile,GRAY))
+    return buildPrototype(readImage(imagefile,GRAY))
 
 
 
