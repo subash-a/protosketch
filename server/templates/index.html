@@ -1,13 +1,42 @@
 <html>
   <head>
     <link rel="stylesheet" href="static/css/bootstrap.css"/>
+    <title>Protosketch</title>
   </head>
   <body>
-    <form enctype="multipart/form-data" method="POST" action="upload">
-      <input type="file" id="file-input" name="file" 
-	     onchange="javascript:this.form.submit()" accept="image/*"/>
-    </form>
-    <div id="progess-meter">Progress:<span id="progress-value"></span></div>
+    <div class="container" style="background:#ededed;">
+      <div class="row">
+	<div class="span12" style="text-align:center"><h2>Protosketch</h2></div>
+      </div>
+      <hr>
+      <div class="row">
+      <div class="span12"  style="padding-left:15px;">
+	<form enctype="multipart/form-data" method="POST" action="upload">
+	  <h4>Sketch Upload</h4>
+	  <div class="tabbable">
+	    <ul class="nav nav-pills">
+	      <li class="active">
+		<a href="#sys-upload" data-toggle="tab">Computer</a>
+	      </li>
+	      <li>
+		<a href="#web-upload" data-toggle="tab">Web</a>
+	      </li>
+	    </ul>
+	    <div class="tab-content">
+	      <div class="tab-pane active" id="sys-upload" style="height:60px;">
+		<input type="file" id="file-input" name="file" accept="image/*"/>
+	      </div>
+	      <div class="tab-pane" id="web-upload" style="height:60px;">
+		<input type="url" placeholder="http://www.address.com" name="file" style="height:30px"/>
+	      </div>
+	    </div>
+	  </div>
+	  <button class="btn btn-primary" 
+		  onclick="javascript:this.form.submit()">Upload</button>
+	</form>
+      </div>
+      </div>
+    </div>
     <script src="static/js/jquery-1.7.1.js"></script>
     <script src="static/js/bootstrap.js"></script>
 <!--<script src="static/js/upload.js"></script>-->
